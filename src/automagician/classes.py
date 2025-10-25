@@ -27,7 +27,7 @@ except ImportError:
 
 
 class JobStatus(IntEnum):
-    """A enum storing the status of a job
+    """An enum storing the status of a job
 
     Converged = 0
     Incomplete = 1
@@ -53,7 +53,7 @@ class Machine(IntEnum):
 
 @dataclass
 class OptJob:
-    """A class to represent an optomization job
+    """A class to represent an optimization job
 
     status
     home_machine
@@ -69,16 +69,16 @@ class OptJob:
 
 @dataclass
 class DosJob:
-    """Density optomization job
+    """Density optimization job
 
     opt_id
-      The id of the optomization job this is connected to
+      The id of the optimization job this is connected to
     sc_status
-      The status of the optomization job this is connected to
+      The status of the optimization job this is connected to
     dos_status
         The status of the job
     sc_last_on
-      The machine the of the optomization job this is connected to
+      The machine the of the optimization job this is connected to
     dos_last_on
       The machine that this job was connected to
     """
