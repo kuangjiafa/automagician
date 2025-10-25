@@ -744,12 +744,14 @@ def gone_job_check(
 
 
 def check_has_opt(job_path: str, subfile: str) -> bool:
-    """Checks if the list provided the nessicary files for an optimization job
+    """
+    Checks if the path provides the necessary files for an optimization job
     Args:
-     files (list[str]): All of the files in a directory
+        job_path (str): a path-like object where the job is located.
+        subfile (str): the name of the subfile.
     Returns:
-     bool: True if the list contains all of POSCAR, POTCAR, INCAR, KPOINTS,
-     and the subfile.
+        bool: True if the list contains all of POSCAR, POTCAR, INCAR, KPOINTS,
+        and the subfile.
     """
     files = os.listdir(job_path)
     calc_files = ["POSCAR", "POTCAR", "INCAR", "KPOINTS", subfile]
