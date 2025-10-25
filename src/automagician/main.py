@@ -175,7 +175,7 @@ def set_up_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="resetjobstatus_flag",
         default=False,
-        help="Reset all job statuses from convered to unconverged",
+        help="Reset all job statuses from converged to unconverged",
     )  # not fully implemented
     parser.add_argument(
         "--db_debug",
@@ -189,7 +189,7 @@ def set_up_parser() -> argparse.ArgumentParser:
         action="store_true",
         dest="delpwd_flag",
         default=False,
-        help="Remove the present working directgory from database",
+        help="Remove the present working directory from database",
     )
     parser.add_argument(
         "--verbose",
@@ -339,7 +339,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
         ):
             exit()
         logger.error(
-            "An error occoured when processing an automagican job. Will wrap up and exit"
+            "An error occurred when processing an automagician job. Will wrap up and exit"
         )
         traceback.print_exc()
         process_job.submit_queue(
