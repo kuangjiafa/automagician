@@ -298,7 +298,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
                             )
 
         except JobLimitError:
-            logger.warn("JobLimitError")
+            logger.warning("JobLimitError")
             pass
         except Exception as e:
             logger.error(f"error: {e} cannot continue processing")
