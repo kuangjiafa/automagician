@@ -60,7 +60,7 @@ def process_opt(
 ) -> None:
     """Processes an opt job, checking to see if it has the required files, and is running
 
-        If the job is running writes to prelimary results
+        If the job is running writes to preliminary results
 
         Updates machine last on for the particular OptJob in opt_jobs
 
@@ -772,16 +772,16 @@ def submit_queue(
         database: Database,
         limit: bool,
 ) -> None:
-    """Sumbits the jobs to the quene of the machine
+    """Submits the jobs to the queue of the machine
 
-    When submitting to fri-halifax attempts to balance files based on how many jobs are in the quene
+    When submitting to fri-halifax attempts to balance files based on how many jobs are in the queue
 
-    When sumbitting to tacc  tires to derermine if it will hit the limit then sumbits the jobs
+    When submitting to tacc  tires to determine if it will hit the limit then submits the jobs
     """
     logger = logging.getLogger()
     if len(sub_queue) >= limit:
         logger.warning(
-            f"Hit limit of {limit}, Will not submit any jobs. Submission quene was {len(sub_queue)} jobs in size"
+            f"Hit limit of {limit}, Will not submit any jobs. Submission queue was {len(sub_queue)} jobs in size"
         )
         return
     subfile = machine_file.get_subfile(machine)
