@@ -3,13 +3,13 @@ from enum import IntEnum
 from typing import Literal
 
 try:
-    import fabric  # type: ignore
+    from fabric import Connection, Transfer
 
 
     @dataclass
     class SshScp:
-        ssh: fabric.connection.Connection
-        scp: fabric.transfer.Transfer
+        ssh: Connection
+        scp: Transfer
 
 
     @dataclass
@@ -17,9 +17,12 @@ try:
         config: Literal["NoSSH"] | SshScp
 
 except ImportError:
+    print("Fabric was not imported.")
+    Connection = None
+    Transfer = None
 
     @dataclass
-    class SSHConfig:  # type: ignore
+    class SSHConfig:
         config: Literal["NoSSH"]
 
 
