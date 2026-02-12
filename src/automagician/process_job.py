@@ -1,3 +1,4 @@
+from __future__ import annotations
 import logging
 import os
 import re
@@ -6,12 +7,13 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
 import automagician.create_job as create_job
 import automagician.finish_job as finish_job
 import automagician.machine as machine_file
+import automagician.small_functions as small_functions
 import automagician.update_job as update_job
 from automagician.classes import (
     DosJob,
@@ -22,28 +24,13 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-from automagician.database import Database
 
-try:
-    from automagician.classes import SshScp
+if TYPE_CHECKING:
+    import automagician.database
 
+if TYPE_CHECKING:
+    from automagician.database import Database
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def process_opt(
@@ -93,7 +80,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                scp_get_dir(
+                small_functions.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -187,11 +174,18 @@ def check_error(job_directory: str) -> bool:
       True iff ll_out shows an error, false otherwise"""
     logger = logging.getLogger()
     lloutpath = os.path.join(job_directory, "ll_out")
-    grepout = subprocess.call(
-        ["grep", r"I\ REFUSE\ TO\ CONTINUE\ WITH\ THIS\ SICK\ JOB", lloutpath]
-    )
 
-    if grepout == 0:
+    error_found = False
+    try:
+        with open(lloutpath, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if "I REFUSE TO CONTINUE WITH THIS SICK JOB" in line:
+                    error_found = True
+                    break
+    except OSError:
+        return False
+
+    if error_found:
         logger.warning(f"The job in {job_directory} reported an error!")
         return True
     else:
@@ -227,8 +221,10 @@ def determine_convergence(job_directory: str) -> bool:
     logger.debug("running vef.pl")
     cwd = os.getcwd()
     os.chdir(job_directory)
-    subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    os.chdir(cwd)
+    try:
+        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    finally:
+        os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
         return False
     if is_isif3(job_directory):
@@ -286,15 +282,14 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     Returns:
       bool: True iff the energy minimization was stopped due to required accuracy being met
       False otherwise"""
-    grep_retcode = subprocess.call(
-        [
-            "grep",
-            "reached required accuracy - stopping structural energy minimisation",
-            ll_out,
-        ],
-        stdout=subprocess.DEVNULL,
-    )
-    return grep_retcode == 0
+    try:
+        with open(ll_out, "r", encoding="utf-8", errors="ignore") as f:
+            for line in f:
+                if "reached required accuracy - stopping structural energy minimisation" in line:
+                    return True
+    except OSError:
+        return False
+    return False
 
 
 def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
@@ -570,9 +565,9 @@ def _get_submitted_jobs_slurm(
         else:
             job_status = JobStatus.RUNNING
 
-        job_type = classify_job_dir(job_dir)
+        job_type = small_functions.classify_job_dir(job_dir)
         if job_type in ["dos", "sc"]:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in dos_jobs:
                 dos_jobs[opt_dir] = DosJob(
                     opt_id=-1,
@@ -589,7 +584,7 @@ def _get_submitted_jobs_slurm(
                 dos_jobs[opt_dir].sc_status = job_status
                 dos_jobs[opt_dir].sc_last_on = machine
         elif job_type == "wav":
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in wav_jobs:
                 wav_jobs[opt_dir] = WavJob(
                     opt_id=-1, wav_status=job_status, wav_last_on=machine
@@ -682,27 +677,6 @@ def get_submitted_jobs(
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
 
 
-def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
-    """Returns the type of job this is based on the ending directory name.
-
-    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-    this would return "sc", and if it ended in /wav returns "wav".
-    Finally if it does not match any of the following returns "opt"
-    """
-    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
-    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
-    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
-
-    if is_dos_regex.match(str(os.path.normpath(job_dir))):
-        return "dos"
-    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
-        return "sc"
-    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
-        return "wav"
-    else:
-        return "opt"
-
-
 def gone_job_check(
         database: Database,
         opt_jobs: Dict[str, OptJob],
@@ -790,119 +764,122 @@ def submit_queue(
     subfile = machine_file.get_subfile(machine)
     logger.debug("starting queue submit")
     cwd = os.getcwd()
-    if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
-        other_subfile = machine_file.get_subfile(Machine(1 - machine))
+    try:
+        if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
+            other_subfile = machine_file.get_subfile(Machine(1 - machine))
 
-        this_machine_job_count = len(
-            str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
-        )
-        other_machine_job_count = 0
-        match ssh_config.config:
-            case "NoSSH":
+            this_machine_job_count = len(
+                str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
+            )
+            other_machine_job_count = 0
+            if ssh_config.config == "NoSSH":
                 other_machine_job_count = 0
-            case SshScp(ssh=ssh):
-                other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
-        diff_in_size = this_machine_job_count - other_machine_job_count
-        num_to_sub = len(sub_queue)
-        num_to_sub_there = num_to_sub / 2 + diff_in_size
-
-        if not balance:
-            num_to_sub_there = 0
-        elif ssh_config.config == "NoSSH":
-            num_to_sub_there = 0
-        elif num_to_sub_there < 0:
-            num_to_sub_there = 0
-        elif num_to_sub_there > num_to_sub:
-            num_to_sub_there = num_to_sub
-
-        logger.debug(
-            f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
-        )
-
-        sub_queue_index = 0
-        while sub_queue_index < num_to_sub_there:
-            job_dir = sub_queue[sub_queue_index]
-            update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
-            new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
-            machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
-            update_job.set_status_for_newly_submitted_job(
-                job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
-            )
-            sub_queue_index = sub_queue_index + 1
-
-        while sub_queue_index < num_to_sub:
-            job_dir = sub_queue[sub_queue_index]
-            os.chdir(job_dir)
-            sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
-            print(sbatch_process)
-            print(sbatch_process.returncode)
-            if sbatch_process.returncode != 0:
-                logger.warning(
-                    f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
+            else:
+                other_machine_job_count = int(
+                    ssh_config.config.ssh.run("squeue", hide=True).stdout
                 )
-            update_job.set_status_for_newly_submitted_job(
-                job_dir,
-                machine,
-                dos_jobs,
-                wav_jobs,
-                opt_jobs,
-                sbatch_process.returncode != 0,
+            diff_in_size = this_machine_job_count - other_machine_job_count
+            num_to_sub = len(sub_queue)
+            num_to_sub_there = num_to_sub / 2 + diff_in_size
+
+            if not balance:
+                num_to_sub_there = 0
+            elif ssh_config.config == "NoSSH":
+                num_to_sub_there = 0
+            elif num_to_sub_there < 0:
+                num_to_sub_there = 0
+            elif num_to_sub_there > num_to_sub:
+                num_to_sub_there = num_to_sub
+
+            logger.debug(
+                f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
             )
-            sub_queue_index = sub_queue_index + 1
 
-    else:  # tacc
-        num_to_sub = len(sub_queue)
-        logger.debug("num to submit is " + str(num_to_sub))
-        num_can_sub = [0, 0, 0]
-        total_free_spaces = 0
-        num_will_sub = [0, 0, 0]
-        # will_hit_limit = False
-
-        for i in range(0, 3):
-            num_can_sub[i] = constants.TACC_QUEUE_MAXES[i] - tacc_queue_sizes[i]
-            total_free_spaces = total_free_spaces + num_can_sub[i]
-
-        if not balance:
-            total_free_spaces = num_can_sub[0]
-            num_can_sub[1] = 0
-            num_can_sub[2] = 0
-
-        if total_free_spaces < num_to_sub:
-            num_will_sub = num_can_sub
-            # will_hit_limit = True
-        else:
-            for i in range(0, 3):
-                if total_free_spaces == 0:
-                    continue
-                num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
-                num_to_sub = num_to_sub - num_will_sub[i]
-                total_free_spaces = total_free_spaces - num_can_sub[i]
-
-        sub_queue_index = 0
-        for i in range(0, 3):
-            for _ in range(0, num_will_sub[i]):
+            sub_queue_index = 0
+            while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
-                os.chdir(job_dir)
-                if i + 2 == machine:
-                    subprocess.call(
-                        ["sbatch", machine_file.get_subfile(Machine(i + 2))]
-                    )
-                else:
-                    update_job.switch_subfile(
-                        job_dir,
-                        machine_file.get_subfile(Machine(i + 2)),
-                        subfile,
-                        machine,
-                    )
-                    add_to_insta_submit(
-                        job_dir, machine_file.get_machine_name(Machine(i + 2)), database
-                    )
+                update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
+                new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
+                machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
+                ssh_config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
                 update_job.set_status_for_newly_submitted_job(
-                    job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
+                    job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
                 sub_queue_index = sub_queue_index + 1
-    os.chdir(cwd)
+
+            while sub_queue_index < num_to_sub:
+                job_dir = sub_queue[sub_queue_index]
+                os.chdir(job_dir)
+                sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
+                print(sbatch_process)
+                print(sbatch_process.returncode)
+                if sbatch_process.returncode != 0:
+                    logger.warning(
+                        f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
+                    )
+                update_job.set_status_for_newly_submitted_job(
+                    job_dir,
+                    machine,
+                    dos_jobs,
+                    wav_jobs,
+                    opt_jobs,
+                    sbatch_process.returncode != 0,
+                )
+                sub_queue_index = sub_queue_index + 1
+
+        else:  # tacc
+            num_to_sub = len(sub_queue)
+            logger.debug("num to submit is " + str(num_to_sub))
+            num_can_sub = [0, 0, 0]
+            total_free_spaces = 0
+            num_will_sub = [0, 0, 0]
+            # will_hit_limit = False
+
+            for i in range(0, 3):
+                num_can_sub[i] = constants.TACC_QUEUE_MAXES[i] - tacc_queue_sizes[i]
+                total_free_spaces = total_free_spaces + num_can_sub[i]
+
+            if not balance:
+                total_free_spaces = num_can_sub[0]
+                num_can_sub[1] = 0
+                num_can_sub[2] = 0
+
+            if total_free_spaces < num_to_sub:
+                num_will_sub = num_can_sub
+                # will_hit_limit = True
+            else:
+                for i in range(0, 3):
+                    if total_free_spaces == 0:
+                        continue
+                    num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
+                    num_to_sub = num_to_sub - num_will_sub[i]
+                    total_free_spaces = total_free_spaces - num_can_sub[i]
+
+            sub_queue_index = 0
+            for i in range(0, 3):
+                for _ in range(0, num_will_sub[i]):
+                    job_dir = sub_queue[sub_queue_index]
+                    os.chdir(job_dir)
+                    if i + 2 == machine:
+                        subprocess.call(
+                            ["sbatch", machine_file.get_subfile(Machine(i + 2))]
+                        )
+                    else:
+                        update_job.switch_subfile(
+                            job_dir,
+                            machine_file.get_subfile(Machine(i + 2)),
+                            subfile,
+                            machine,
+                        )
+                        add_to_insta_submit(
+                            job_dir, machine_file.get_machine_name(Machine(i + 2)), database
+                        )
+                    update_job.set_status_for_newly_submitted_job(
+                        job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
+                    )
+                    sub_queue_index = sub_queue_index + 1
+    finally:
+        os.chdir(cwd)
 
 
 def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
