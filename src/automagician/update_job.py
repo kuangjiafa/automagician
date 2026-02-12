@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import shlex
 import subprocess
 import traceback
 from os.path import exists
@@ -23,7 +24,7 @@ try:
         local (str): the directory on the local machine to transfer files to
         """
         for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
+            "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
@@ -56,18 +57,7 @@ def log_error(job_directory: str, home: str) -> None:
       None
     Changes:
       Updates error_log.dat, creating it if it dosent exist, and writes the error message, and current time
-    Tests
-      TODO: Medium priority
-        Simple, something not critical"""
-    # error_log = open(os.path.join(home, "error_log.dat"), "a+")
-    # potentially create an error buffer and write the errors all at once in the end? potentially a bad idea in case of a crash though/not sure if the speedup would be non-negligible
-    # for error_message in get_error_message(job_directory):
-    #     error_log.write(
-    #         f"{str(datetime.datetime.now())} {job_directory} {error_message} \n"
-    #     )
-    # error_log.close()
-
-    # TODO: verify that this change doesn't
+    """
     with open(os.path.join(home, "error_log.dat"), "a+") as error_log:
         for error_message in get_error_message(job_directory):
             error_log.write(
@@ -112,6 +102,7 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
             finish_job.wrap_up(job_directory)
             return True
         elif (
@@ -119,18 +110,20 @@ def fix_error(
                 in error_message
         ):
             cwd = os.getcwd()
-            os.chdir(job_directory)
-            subprocess.call(
-                [constants.SORT_POS_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            subprocess.call(
-                [constants.SO_GET_SOFT_PBE_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            os.chdir(cwd)
+            try:
+                os.chdir(job_directory)
+                subprocess.call(
+                    [constants.SORT_POS_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+                subprocess.call(
+                    [constants.SO_GET_SOFT_PBE_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+            finally:
+                os.chdir(cwd)
             return True
     logger.info(f"a fix was not attempted for the job at {job_directory}")
     return False
@@ -228,20 +221,24 @@ def switch_subfile(
         new_sub:
         subfile: The name of the subfile
         machine:"""
-    os.chdir(job_dir)
+    cwd = os.getcwd()
+    try:
+        os.chdir(job_dir)
 
-    if not exists(subfile):
-        return
+        if not exists(subfile):
+            return
 
-    default_subfile_path = (
-        constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
-        if machine < 2
-        else constants.DEFAULT_SUBFILE_PATH_TACC
-    )
+        default_subfile_path = (
+            constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
+            if machine < 2
+            else constants.DEFAULT_SUBFILE_PATH_TACC
+        )
 
-    subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
-    # os.remove(old_sub)
-    update_job_name(new_sub)
+        subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
+        # os.remove(old_sub)
+        update_job_name(new_sub)
+    finally:
+        os.chdir(cwd)
 
 
 def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
@@ -281,7 +278,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
-    job_type = classify_job_dir(job_dir)
+    import automagician.process_job as process_job
+    job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
     # for now, status -1 is for special jobs that no longer need optimization

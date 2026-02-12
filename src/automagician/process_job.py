@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import shlex
 import shutil
 import shlex
 import subprocess
@@ -822,7 +823,7 @@ def submit_queue(
             update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
             new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
             machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
+            ssh_config.config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
             update_job.set_status_for_newly_submitted_job(
                 job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
             )
