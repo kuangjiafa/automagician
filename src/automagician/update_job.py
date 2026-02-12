@@ -159,10 +159,11 @@ def update_job_name(subfile: str) -> None:
     script_lines = script.readlines()
     script.close()
     with open(subfile, "w") as script:
+        cwd_str = os.getcwd().replace("/", "_")
         for line in script_lines:
             if "-J" in line or "--job-name=" in line:
                 script.write(
-                    "#SBATCH -J " + "AM_" + os.getcwd().replace("/", "_") + "\n"
+                    "#SBATCH -J " + "AM_" + cwd_str + "\n"
                 )
             else:
                 script.write(line)
