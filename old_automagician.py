@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=duplicate-code
 
 import cProfile
 import inspect
@@ -169,6 +170,16 @@ class JobLimitError(Exception):
     pass
 
 
+class Machine(IntEnum):
+  """A enum storing the machine number"""
+  Fri = 0
+  Halifax = 1
+  Stampede2 = 2
+  Frontera = 3
+  Ls6 = 4
+  Unknown = -1
+
+
 class JobStatus(IntEnum):
   """A enum storing the status of a job
   
@@ -255,11 +266,11 @@ def get_machine_name(machine_number):
     None Planned (Would essentially be testing python)
   """
   return {
-    0: "fri.oden.utexas.edu",
-    1: "halifax.oden.utexas.edu",
-    2: "stampede2.tacc.utexas.edu",
-    3: "frontera.tacc.utexas.edu",
-    4: "ls6.tacc.utexas.edu"
+    Machine.Fri: "fri.oden.utexas.edu",
+    Machine.Halifax: "halifax.oden.utexas.edu",
+    Machine.Stampede2: "stampede2.tacc.utexas.edu",
+    Machine.Frontera: "frontera.tacc.utexas.edu",
+    Machine.Ls6: "ls6.tacc.utexas.edu"
   }.get(machine_number, "localhost")
 
 def get_machine_number():
@@ -279,14 +290,13 @@ def get_machine_number():
     None planned: Would simply test re and socket and python"""
   rm_login_node = re.compile("login[0-3]\.")
   machine_name = rm_login_node.sub("", socket.gethostname())
-  #TODO: Can this be a enum?
   return {
-    "fri.oden.utexas.edu": 0,
-    "halifax.oden.utexas.edu": 1,
-    "stampede2.tacc.utexas.edu": 2,
-    "frontera.tacc.utexas.edu": 3,
-    "ls6.tacc.utexas.edu": 4,
-  }.get(machine_name, -1)
+    "fri.oden.utexas.edu": Machine.Fri,
+    "halifax.oden.utexas.edu": Machine.Halifax,
+    "stampede2.tacc.utexas.edu": Machine.Stampede2,
+    "frontera.tacc.utexas.edu": Machine.Frontera,
+    "ls6.tacc.utexas.edu": Machine.Ls6,
+  }.get(machine_name, Machine.Unknown)
 
 def ssh_scp_init():
   """ Initalizes ssh and sets the no_ssh varable appropately
@@ -518,11 +528,11 @@ def get_subfile(machine):
   Tests:
     None planned"""
   return {
-    0: "fri.sub",
-    1: "halifax.sub",
-    2: "knl.mpi.slurm",
-    3: "clx.mpi.slurm",
-    4: "milan.mpi.slurm"
+    Machine.Fri: "fri.sub",
+    Machine.Halifax: "halifax.sub",
+    Machine.Stampede2: "knl.mpi.slurm",
+    Machine.Frontera: "clx.mpi.slurm",
+    Machine.Ls6: "milan.mpi.slurm"
   }.get(machine)
 
 def register():
