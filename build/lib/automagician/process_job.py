@@ -3,13 +3,12 @@ from __future__ import annotations
 import logging
 import os
 import re
-import shlex
 import shutil
 import shlex
 import subprocess
 import traceback
 from os.path import exists
-from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
+from typing import Dict, List, Literal, TextIO, Tuple, TYPE_CHECKING
 
 import automagician.constants as constants
 import automagician.machine as machine_file
@@ -28,6 +27,7 @@ if TYPE_CHECKING:
 
 try:
     from automagician.classes import SshScp
+
 
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
@@ -48,17 +48,17 @@ except ImportError:
 
 
 def process_opt(
-    job_directory: str,
-    machine: Machine,
-    opt_jobs: Dict[str, OptJob],
-    clear_certificate: bool,
-    home_dir: str,
-    ssh_config: SSHConfig,
-    preliminary_results: TextIO,
-    continue_past_limit: bool,
-    limit: int,
-    sub_queue: List[str],
-    hit_limit: bool,
+        job_directory: str,
+        machine: Machine,
+        opt_jobs: Dict[str, OptJob],
+        clear_certificate: bool,
+        home_dir: str,
+        ssh_config: SSHConfig,
+        preliminary_results: TextIO,
+        continue_past_limit: bool,
+        limit: int,
+        sub_queue: List[str],
+        hit_limit: bool,
 ) -> None:
     """Processes an opt job, checking to see if it has the required files, and is running
 
@@ -96,7 +96,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                machine_file.scp_get_dir(
+                scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -114,7 +114,7 @@ def process_opt(
     logger.debug(f"Found opt files in {job_directory}")
 
     if clear_certificate and os.path.exists(
-        os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME)
+            os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME)
     ):
         os.remove(os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME))
 
@@ -219,21 +219,19 @@ def determine_convergence(job_directory: str) -> bool:
     logger = logging.getLogger()
 
     if os.path.exists(
-        os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME)
+            os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME)
     ):
         return True
     if not os.path.exists(os.path.join(job_directory, "CONTCAR")) or not os.path.exists(
-        os.path.join(job_directory, "ll_out")
+            os.path.join(job_directory, "ll_out")
     ):
         return False
     # use ll_out to determine convergence
     logger.debug("running vef.pl")
     cwd = os.getcwd()
-    try:
-        os.chdir(job_directory)
-        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    finally:
-        os.chdir(cwd)
+    os.chdir(job_directory)
+    subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
         return False
     if is_isif3(job_directory):
@@ -266,9 +264,6 @@ def determine_box_convergence(job_directory: str) -> bool:
         return False
 
 
-ISIF3_REGEX = re.compile(r"ISIF\s*=\s*3")
-
-
 # Determine if this job needs to be treated differently
 def is_isif3(job_directory: str) -> bool:
     """Returns if the INCAR present in job_directory has the tag ISIF = 3
@@ -278,9 +273,10 @@ def is_isif3(job_directory: str) -> bool:
     Returns:
       True if the INCAR has ISIF = 3 (whitespace ignored), false otherwise
     """
+    isif3regex = re.compile(r"ISIF\s*=\s*3")
     with open(os.path.join(job_directory, "INCAR"), "r") as f:
         for line in f:
-            if ISIF3_REGEX.match(line):
+            if isif3regex.match(line):
                 return True
     return False
 
@@ -325,14 +321,14 @@ def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
 
 
 def process_unconverged(
-    job_directory: str,
-    opt_jobs: Dict[str, OptJob],
-    continue_past_limit: bool,
-    limit: int,
-    sub_queue: List[str],
-    machine: Machine,
-    hit_limit: bool,
-    preliminary_results: TextIO,
+        job_directory: str,
+        opt_jobs: Dict[str, OptJob],
+        continue_past_limit: bool,
+        limit: int,
+        sub_queue: List[str],
+        machine: Machine,
+        hit_limit: bool,
+        preliminary_results: TextIO,
 ) -> None:
     """Adds the final values of the job to the preliminary_results file then resbumits
 
@@ -390,14 +386,14 @@ def process_unconverged(
 
 
 def process_dos(
-    job_directory: str,
-    opt_jobs: Dict[str, OptJob],
-    dos_jobs: Dict[str, DosJob],
-    continue_past_limit: bool,
-    limit: int,
-    sub_queue: List[str],
-    machine: Machine,
-    hit_limit: bool,
+        job_directory: str,
+        opt_jobs: Dict[str, OptJob],
+        dos_jobs: Dict[str, DosJob],
+        continue_past_limit: bool,
+        limit: int,
+        sub_queue: List[str],
+        machine: Machine,
+        hit_limit: bool,
 ) -> None:
     """Processes a dos job and sets status correctly
 
@@ -434,7 +430,7 @@ def process_dos(
         return
 
     if (
-        opt_jobs[job_directory].status != JobStatus.CONVERGED
+            opt_jobs[job_directory].status != JobStatus.CONVERGED
     ):  # make parent converge first
         return
 
@@ -490,14 +486,14 @@ def process_dos(
 
 
 def process_wav(
-    job_directory: str,
-    opt_jobs: Dict[str, OptJob],
-    wav_jobs: Dict[str, WavJob],
-    continue_past_limit: bool,
-    limit: int,
-    sub_queue: List[str],
-    machine: Machine,
-    hit_limit: bool,
+        job_directory: str,
+        opt_jobs: Dict[str, OptJob],
+        wav_jobs: Dict[str, WavJob],
+        continue_past_limit: bool,
+        limit: int,
+        sub_queue: List[str],
+        machine: Machine,
+        hit_limit: bool,
 ) -> None:
     """Processes a wav_job and sets its status to 0 if it is complete or if check_error returns true
 
@@ -509,7 +505,7 @@ def process_wav(
     logger.debug(f"process_wav in {job_directory}")
 
     if (
-        opt_jobs[job_directory].status != JobStatus.CONVERGED
+            opt_jobs[job_directory].status != JobStatus.CONVERGED
     ):  # make parent converge first
         return
 
@@ -526,12 +522,12 @@ def process_wav(
     else:
         logger.debug("no wav_dir -> create_wav")
         if not create_job.create_wav(
-            job_directory=job_directory,
-            continue_past_limit=continue_past_limit,
-            limit=limit,
-            sub_queue=sub_queue,
-            machine=machine,
-            hit_limit=hit_limit,
+                job_directory=job_directory,
+                continue_past_limit=continue_past_limit,
+                limit=limit,
+                sub_queue=sub_queue,
+                machine=machine,
+                hit_limit=hit_limit,
         ):
             wav_jobs[job_directory].wav_status = JobStatus.RUNNING
         else:
@@ -542,10 +538,10 @@ def process_wav(
 
 
 def _get_submitted_jobs_slurm(
-    machine: Machine,
-    opt_jobs: Dict[str, OptJob],
-    dos_jobs: Dict[str, DosJob],
-    wav_jobs: Dict[str, WavJob],
+        machine: Machine,
+        opt_jobs: Dict[str, OptJob],
+        dos_jobs: Dict[str, DosJob],
+        wav_jobs: Dict[str, WavJob],
 ) -> None:
     """Gets all currently running jobs and adds them to opt_jobs, dos_jobs, wav_jobs
 
@@ -627,11 +623,11 @@ def _get_submitted_jobs_slurm(
 
 
 def get_submitted_jobs(
-    machine: Machine,
-    opt_jobs: Dict[str, OptJob],
-    dos_jobs: Dict[str, DosJob],
-    wav_jobs: Dict[str, WavJob],
-    tacc_queue_sizes: List[int],
+        machine: Machine,
+        opt_jobs: Dict[str, OptJob],
+        dos_jobs: Dict[str, DosJob],
+        wav_jobs: Dict[str, WavJob],
+        tacc_queue_sizes: List[int],
 ) -> None:
     """Ensures only jobs that are actually running have JobStatus.Running set
 
@@ -675,27 +671,27 @@ def get_submitted_jobs(
         for job_dir in opt_jobs:
             if opt_jobs[job_dir].status == JobStatus.RUNNING:
                 tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] = (
-                    tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
+                        tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
                 )
                 if opt_jobs[job_dir].last_on == machine:
                     opt_jobs[job_dir].status = JobStatus.INCOMPLETE
         for job_dir in dos_jobs:
             if dos_jobs[job_dir].sc_status == JobStatus.RUNNING:
                 tacc_queue_sizes[dos_jobs[job_dir].sc_last_on - 2] = (
-                    tacc_queue_sizes[dos_jobs[job_dir].sc_last_on - 2] + 1
+                        tacc_queue_sizes[dos_jobs[job_dir].sc_last_on - 2] + 1
                 )
                 if dos_jobs[job_dir].sc_last_on == machine:
                     dos_jobs[job_dir].sc_status = JobStatus.INCOMPLETE
             if dos_jobs[job_dir].dos_status == JobStatus.RUNNING:
                 tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] = (
-                    tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
+                        tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
                 )
                 if dos_jobs[job_dir].dos_last_on == machine:
                     dos_jobs[job_dir].dos_status = JobStatus.INCOMPLETE
         for job_dir in wav_jobs:
             if wav_jobs[job_dir].wav_status == JobStatus.INCOMPLETE:
                 tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] = (
-                    tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] + 1
+                        tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] + 1
                 )
                 if wav_jobs[job_dir].wav_last_on == machine:
                     wav_jobs[job_dir].wav_status = JobStatus.RUNNING
@@ -703,8 +699,8 @@ def get_submitted_jobs(
 
 
 def gone_job_check(
-    database: Database,
-    opt_jobs: Dict[str, OptJob],
+        database: Database,
+        opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
 
@@ -762,17 +758,17 @@ def check_has_opt(job_path: str, subfile: str) -> bool:
 
 
 def submit_queue(
-    machine: Machine,
-    balance: bool,
-    ssh_config: SSHConfig,
-    sub_queue: List[str],
-    home: str,
-    tacc_queue_sizes: List[int],
-    opt_jobs: Dict[str, OptJob],
-    dos_jobs: Dict[str, DosJob],
-    wav_jobs: Dict[str, WavJob],
-    database: Database,
-    limit: bool,
+        machine: Machine,
+        balance: bool,
+        ssh_config: SSHConfig,
+        sub_queue: List[str],
+        home: str,
+        tacc_queue_sizes: List[int],
+        opt_jobs: Dict[str, OptJob],
+        dos_jobs: Dict[str, DosJob],
+        wav_jobs: Dict[str, WavJob],
+        database: Database,
+        limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
 
@@ -798,12 +794,11 @@ def submit_queue(
             str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
         )
         other_machine_job_count = 0
-        if ssh_config.config == "NoSSH":
-            other_machine_job_count = 0
-        else:
-            other_machine_job_count = int(
-                ssh_config.config.ssh.run("squeue", hide=True).stdout
-            )
+        match ssh_config.config:
+            case "NoSSH":
+                other_machine_job_count = 0
+            case SshScp(ssh=ssh):
+                other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
         diff_in_size = this_machine_job_count - other_machine_job_count
         num_to_sub = len(sub_queue)
         num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -827,7 +822,7 @@ def submit_queue(
             update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
             new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
             machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
+            ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
             update_job.set_status_for_newly_submitted_job(
                 job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
             )
