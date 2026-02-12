@@ -58,7 +58,9 @@ def wrap_up(job_directory: str) -> None:
         )
         shutil.move("ll_out", largest_run)
         logger.warning("combine_XDAT_FE disabled due to bugs")
+
     import automagician.update_job as update_job
+
     update_job.optimizer_review(job_directory)
     os.chdir(cwd)
 
@@ -74,9 +76,10 @@ def give_certificate(job_directory: str) -> int:
              0 if certificate was created
     """
     try:
-        open(
+        with open(
             os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-        )
+        ):
+            pass
         return 0
     except FileExistsError:
         return 1
