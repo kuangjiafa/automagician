@@ -193,6 +193,7 @@ class Database:
             dos_jobs: A collection of every dos_job known.
             wav_jobs: A collection of every wav_job known.
         """
+        import automagician.update_job as update_job
         logger = logging.getLogger()
         import automagician.update_job as update_job
 
