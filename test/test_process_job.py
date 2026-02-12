@@ -112,6 +112,22 @@ def test_is_isif3_isif3_white_space(tmp_path):
     assert isif3_ret_val is True
 
 
+def test_is_isif3_isif3_leading_whitespace(tmp_path):
+    shutil.copy("test/test_files/failed_u_run/INCAR", tmp_path)
+    with open(os.path.join(tmp_path, "INCAR"), "a+") as f:
+        f.write("  ISIF = 3")
+    isif3_ret_val = is_isif3(tmp_path)
+    assert isif3_ret_val is True
+
+
+def test_is_isif3_isif3_leading_tab(tmp_path):
+    shutil.copy("test/test_files/failed_u_run/INCAR", tmp_path)
+    with open(os.path.join(tmp_path, "INCAR"), "a+") as f:
+        f.write("\tISIF = 3")
+    isif3_ret_val = is_isif3(tmp_path)
+    assert isif3_ret_val is True
+
+
 def test_determine_box_convergence_empty_fe_dat(tmp_path):
     with open(os.path.join(tmp_path, "fe.dat"), "w+"):
         pass
