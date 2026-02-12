@@ -130,14 +130,28 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
     """
     logger = logging.getLogger()
     if not os.path.isdir(constants.LOCK_DIR):
-        os.makedirs(constants.LOCK_DIR)
-        subprocess.run(["chmod", "777", constants.LOCK_DIR])
+        os.makedirs(constants.LOCK_DIR, mode=0o700)
+    else:
+        stat_info = os.stat(constants.LOCK_DIR)
+        if stat_info.st_uid != os.getuid():
+            raise PermissionError(f"{constants.LOCK_DIR} is not owned by the current user.")
+        if (stat_info.st_mode & 0o777) != 0o700:
+            os.chmod(constants.LOCK_DIR, 0o700)
 
     if machine < 2 and ssh_config.config != "NoSSH":
-        if not ssh_config.config.ssh.run(
-                "test -d " + shlex.quote(constants.LOCK_DIR), warn=True, hide=True
-        ).ok:
-            ssh_config.config.ssh.run("mkdir -p " + shlex.quote(constants.LOCK_DIR))
+        # Check remote directory existence and ownership securely
+        # Assuming remote is Linux (stat -c %u)
+        cmd = (
+            f'if [ ! -d "{constants.LOCK_DIR}" ]; then '
+            f'mkdir -p -m 700 "{constants.LOCK_DIR}"; '
+            f'else '
+            f'if [ "$(stat -c \'%u\' "{constants.LOCK_DIR}")" -ne "$(id -u)" ]; then '
+            f'echo "Remote lock directory owned by another user" >&2; exit 1; '
+            f'fi; '
+            f'chmod 700 "{constants.LOCK_DIR}"; '
+            f'fi'
+        )
+        ssh_config.config.ssh.run(cmd)
 
     if exists(constants.LOCK_FILE):
         logger.error(
