@@ -202,18 +202,37 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
       None
     """
     cwd = os.getcwd()
-    os.chdir(local)
-    for f in (
+    try:
+        os.chdir(local)
+        for f in (
             subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                    .stdout.decode("utf-8")
-                    .split("\n")
-    ):
-        if len(f) < 1:
-            continue
-        dirname = os.path.dirname(remote + f[1:])
-        ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
-        ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
-    os.chdir(cwd)
+            .stdout.decode("utf-8")
+            .split("\n")
+        ):
+            if len(f) < 1:
+                continue
+            dirname = os.path.dirname(remote + f[1:])
+            ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
+            ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
+    finally:
+        os.chdir(cwd)
+
+
+if not no_fabric:
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+        """Puts files inside the remote directory to the local directory
+
+        Args:
+            remote: the directory on the remote machine to transfer files from
+            local: the directory on the local machine to transfer files to
+        """
+        for f in ssh_scp.ssh.run(
+            "cd " + remote + "; find . -type f | cut -c 2-"
+        ).stdout.split("\n"):
+            if len(f) < 1:
+                continue
+            ssh_scp.scp.get(remote + f, local + f)
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:

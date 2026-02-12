@@ -29,21 +29,6 @@ if TYPE_CHECKING:
 
 try:
     from automagician.classes import SshScp
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
 except ImportError:
     pass
 
@@ -95,7 +80,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                scp_get_dir(
+                machine_file.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -228,9 +213,11 @@ def determine_convergence(job_directory: str) -> bool:
     # use ll_out to determine convergence
     logger.debug("running vef.pl")
     cwd = os.getcwd()
-    os.chdir(job_directory)
-    subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    os.chdir(cwd)
+    try:
+        os.chdir(job_directory)
+        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    finally:
+        os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
         return False
     if is_isif3(job_directory):
