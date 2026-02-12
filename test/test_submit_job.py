@@ -488,7 +488,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
             sc_status=JobStatus.INCOMPLETE,
             dos_status=JobStatus.RUNNING,  # This is running
             sc_last_on=Machine.FRI,  # SC was on FRI
-            dos_last_on=Machine.STAMPEDE2_TACC,  # DOS is on STAMPEDE2 (index 2, so tacc_queue_sizes[0])
+            dos_last_on=Machine.STAMPEDE2_TACC,  # DOS on STAMPEDE2 (value 2, tacc_queue_sizes[2-2=0])
         )
     }
     opt_jobs = {}  # No matching opt_job - this is the key test case
@@ -524,8 +524,8 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
             opt_id=456,
             sc_status=JobStatus.RUNNING,  # SC is also running
             dos_status=JobStatus.RUNNING,  # DOS is running
-            sc_last_on=Machine.FRONTERA_TACC,  # SC on FRONTERA (index 3, tacc_queue_sizes[1])
-            dos_last_on=Machine.LS6_TACC,  # DOS on LS6 (index 4, tacc_queue_sizes[2])
+            sc_last_on=Machine.FRONTERA_TACC,  # SC on FRONTERA (value 3, tacc_queue_sizes[3-2=1])
+            dos_last_on=Machine.LS6_TACC,  # DOS on LS6 (value 4, tacc_queue_sizes[4-2=2])
         )
     }
     opt_jobs = {}  # No matching opt_job
