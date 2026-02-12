@@ -243,9 +243,9 @@ def test_create_sc_potcar(tmp_path):
 
 
 def test_copy_inputs_full(tmp_path):
-    job_dir = os.path.join(tmp_path, "job")
+    job_dir = os.path.join(str(tmp_path), "job")
     os.makedirs(job_dir)
-    dest_dir = os.path.join(tmp_path, "dest")
+    dest_dir = os.path.join(str(tmp_path), "dest")
 
     subfile = "test.sub"
     with open(os.path.join(job_dir, subfile), "w") as f:
@@ -276,9 +276,9 @@ def test_copy_inputs_full(tmp_path):
 
 
 def test_copy_inputs_minimal(tmp_path):
-    job_dir = os.path.join(tmp_path, "job")
+    job_dir = os.path.join(str(tmp_path), "job")
     os.makedirs(job_dir)
-    dest_dir = os.path.join(tmp_path, "dest")
+    dest_dir = os.path.join(str(tmp_path), "dest")
 
     subfile = "test.sub"
     with open(os.path.join(job_dir, subfile), "w") as f:
@@ -304,9 +304,9 @@ def test_copy_inputs_minimal(tmp_path):
 
 
 def test_copy_inputs_missing_mandatory(tmp_path):
-    job_dir = os.path.join(tmp_path, "job")
+    job_dir = os.path.join(str(tmp_path), "job")
     os.makedirs(job_dir)
-    dest_dir = os.path.join(tmp_path, "dest")
+    dest_dir = os.path.join(str(tmp_path), "dest")
 
     subfile = "test.sub"
     with open(os.path.join(job_dir, subfile), "w") as f:
