@@ -127,7 +127,7 @@ class Database:
             dos_status = JobStatus(job[2])
             sc_last_on = Machine(job[3])
             dos_last_on = Machine(job[4])
-            opt_dir = job[5] if job[5] is not None else ""
+            opt_dir = job[5]
 
             # Skip orphaned rows where opt_jobs entry is missing
             if opt_dir is None:
@@ -164,7 +164,7 @@ class Database:
             opt_id = job[0]
             wav_status = JobStatus(job[1])
             wav_last_on = Machine(job[2])
-            opt_dir = job[3] if job[3] is not None else ""
+            opt_dir = job[3]
 
             # Skip orphaned rows where opt_jobs entry is missing
             if opt_dir is None:
