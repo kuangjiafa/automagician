@@ -4,13 +4,14 @@ import os
 import re
 import shlex
 import shutil
-import shlex
 import subprocess
 import traceback
 from os.path import exists
 from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
+import automagician.create_job as create_job
+import automagician.finish_job as finish_job
 import automagician.machine as machine_file
 import automagician.small_functions as small_functions
 import automagician.update_job as update_job
@@ -24,6 +25,8 @@ from automagician.classes import (
     WavJob,
 )
 
+if TYPE_CHECKING:
+    import automagician.database
 
 if TYPE_CHECKING:
     from automagician.database import Database
@@ -69,8 +72,6 @@ def process_opt(
         JobLimitError: If the job limit was hit, and continue_past_limit is not
         set
     """
-    import automagician.update_job as update_job
-
     logger = logging.getLogger()
     subfile = machine_file.get_subfile(machine)
     logger.debug(f"process_opt {job_directory}")
@@ -301,7 +302,6 @@ def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
             optomization job.
         opt_jobs: A collection of every optomization job
     """
-    import automagician.finish_job as finish_job
 
     logger = logging.getLogger()
     logger.debug(f"optimization converged! {job_directory}")
@@ -341,10 +341,6 @@ def process_unconverged(
         JobLimitError: if submitting this job would hit the limit, and
             continue_past_limit is not set.
     """
-    import automagician.create_job as create_job
-    import automagician.finish_job as finish_job
-    import automagician.update_job as update_job
-
     # First check if this is recorded as unconverged
     logger = logging.getLogger()
     logger.debug(f"processing unconverged job at {job_directory}")
@@ -410,9 +406,6 @@ def process_dos(
         hit_limit:
     Changes:
     """
-    import automagician.create_job as create_job
-    import automagician.finish_job as finish_job
-
     logger = logging.getLogger()
     logger.debug("process_dos " + job_directory)
 
@@ -489,9 +482,6 @@ def process_wav(
     """Processes a wav_job and sets its status to 0 if it is complete or if check_error returns true
 
     Otherwise, sets status to -1"""
-    import automagician.create_job as create_job
-    import automagician.finish_job as finish_job
-
     logger = logging.getLogger()
     logger.debug(f"process_wav in {job_directory}")
 
@@ -554,8 +544,6 @@ def _get_submitted_jobs_slurm(
         dos_jobs: The collection of all dos jobs known by automagican
         wav_jobs: The collection of all wav jobs known by automagican
     """
-    import automagician.update_job as update_job
-
     logger = logging.getLogger()
     all_jobs = str(
         subprocess.check_output(["squeue", "-u", os.environ["USER"], "-o", "%A %t %Z"])
@@ -767,8 +755,6 @@ def submit_queue(
 
     When submitting to tacc  tires to determine if it will hit the limit then submits the jobs
     """
-    import automagician.update_job as update_job
-
     logger = logging.getLogger()
     if len(sub_queue) >= limit:
         logger.warning(

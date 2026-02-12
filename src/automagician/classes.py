@@ -16,8 +16,8 @@ try:
     class SSHConfig:
         config: Literal["NoSSH"] | SshScp
 
-except ImportError as e:
-    print(f"Fabric was not imported: {e}")
+except ImportError:
+    print("Fabric was not imported.")
     Connection = None
     Transfer = None
 

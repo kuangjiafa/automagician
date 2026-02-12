@@ -22,7 +22,6 @@ from automagician.process_job import (
     process_opt,
     process_unconverged,
 )
-from automagician.update_job import classify_job_dir
 
 
 def test_check_has_opt_no_files(tmp_path):
