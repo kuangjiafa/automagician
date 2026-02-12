@@ -1,6 +1,9 @@
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import *
 import logging
+import unittest.mock
+import tempfile
+import shlex
 
 def test_is_oden():
     assert is_oden(Machine.FRI)
@@ -49,3 +52,55 @@ def test_ssh_scp_init():
     assert no_balance.config == "NoSSH"
     assert wo_fabric.config == "NoSSH"
 
+
+def test_scp_put_dir_quotes_paths():
+    # Mock SSHConfig
+    # We create a mock that behaves like what scp_put_dir expects
+    mock_ssh_config = unittest.mock.Mock()
+    # ssh_config.ssh.run is called
+    mock_ssh_config.ssh.run = unittest.mock.Mock()
+    # ssh_config.scp.put is called
+    mock_ssh_config.scp.put = unittest.mock.Mock()
+
+    # Create a temporary directory
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a directory with a name that could cause injection if unquoted
+        malicious_name = "; echo 'hacked'"
+        os.makedirs(os.path.join(temp_dir, malicious_name))
+
+        # Create a file inside it so `find` finds something
+        file_path = os.path.join(temp_dir, malicious_name, "file.txt")
+        with open(file_path, "w") as f:
+            f.write("content")
+
+        # Call scp_put_dir
+        # remote path base
+        remote_base = "remote_dir"
+        scp_put_dir(temp_dir, remote_base, mock_ssh_config)
+
+        # Check calls to ssh.run
+        # We expect mkdir -p for the directory
+        found_mkdir = False
+
+        # Calculate expected quoted path
+        # scp_put_dir does: dirname = os.path.dirname(remote + f[1:])
+        # find returns paths relative to `.` e.g. `./; echo 'hacked'/file.txt`
+        # f[1:] is `/<malicious_name>/file.txt`
+        # remote + f[1:] is `remote_dir/<malicious_name>/file.txt`
+        # dirname is `remote_dir/<malicious_name>`
+
+        # So we expect: mkdir -p <quoted_dirname>
+
+        expected_dirname = os.path.dirname(remote_base + f"/{malicious_name}/file.txt")
+        expected_cmd = "mkdir -p " + shlex.quote(expected_dirname)
+
+        for call in mock_ssh_config.ssh.run.call_args_list:
+            args, _ = call
+            cmd = args[0]
+            if "mkdir -p" in cmd:
+                # Check if it matches exactly the quoted command
+                if cmd == expected_cmd:
+                    found_mkdir = True
+                    break
+
+        assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.ssh.run.call_args_list}"
