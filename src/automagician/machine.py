@@ -2,6 +2,7 @@ import datetime
 import logging
 import os
 import re
+import shlex
 import socket
 import subprocess
 from os.path import exists
@@ -134,9 +135,9 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
 
     if machine < 2 and ssh_config.config != "NoSSH":
         if not ssh_config.config.ssh.run(
-                "test -d " + constants.LOCK_DIR, warn=True, hide=True
+                "test -d " + shlex.quote(constants.LOCK_DIR), warn=True, hide=True
         ).ok:
-            ssh_config.config.ssh.run("mkdir -p " + constants.LOCK_DIR)
+            ssh_config.config.ssh.run("mkdir -p " + shlex.quote(constants.LOCK_DIR))
 
     if exists(constants.LOCK_FILE):
         logger.error(
@@ -152,14 +153,14 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
         machine < 2
         and ssh_config.config != "NoSSH"
         and ssh_config.config.ssh.run(
-            "test -e " + constants.LOCK_FILE, warn=True, hide=True
+            "test -e " + shlex.quote(constants.LOCK_FILE), warn=True, hide=True
         ).ok
     ):
         logger.error(
             "it looks like you already have a remote instance of automagician running--please wait for it to finish. thank you! :)",
         )
         logger.error("other automagician process's details:")
-        ssh_config.config.ssh.run("cat " + constants.LOCK_FILE)
+        ssh_config.config.ssh.run("cat " + shlex.quote(constants.LOCK_FILE))
         logger.error(
             f"if you'd like to override the lock, you can delete {constants.LOCK_FILE} on the remote machine and rerun your process",
         )
@@ -170,7 +171,7 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
             f.write(lockstring)
         if machine < 2 and ssh_config.config != "NoSSH":
             ssh_config.config.ssh.run(
-                'echo "' + lockstring + '" > ' + constants.LOCK_FILE
+                f"echo {shlex.quote(lockstring)} > {shlex.quote(constants.LOCK_FILE)}"
             )
 
 
@@ -211,8 +212,8 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
         if len(f) < 1:
             continue
         dirname = os.path.dirname(remote + f[1:])
-        ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
-        ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
+        ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
+        ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
     os.chdir(cwd)
 
 
@@ -220,8 +221,8 @@ def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
     """Removes the lockfile and closes ssh if connected via SSH"""
     subprocess.call(["rm", constants.LOCK_FILE])
     if machine < 2 and ssh_config.config != "NoSSH":
-        ssh_config.ssh.run("rm " + constants.LOCK_FILE)  # type: ignore
-        ssh_config.ssh.close()  # type: ignore
+        ssh_config.config.ssh.run("rm " + shlex.quote(constants.LOCK_FILE))  # type: ignore
+        ssh_config.config.ssh.close()  # type: ignore
     exit()
 
 
