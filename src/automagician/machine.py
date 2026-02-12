@@ -81,10 +81,11 @@ def ssh_scp_init(
                 )
                 scp = fabric.transfer.Transfer(ssh)
                 ssh.run("hostname")
+                return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
             except Exception:
                 logger.warning("you need fri-halifax keys for ssh to work")
                 return SSHConfig(config="NoSSH")
-    return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
+    return SSHConfig(config="NoSSH")
 
 
 def get_machine_name(machine_number: Machine) -> str:
