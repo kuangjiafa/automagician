@@ -4,11 +4,12 @@ import shutil
 from pathlib import PosixPath
 
 from automagician.classes import DosJob, JobStatus, OptJob, WavJob
+from automagician.small_functions import get_opt_dir
 from automagician.update_job import (
     add_preliminary_results,
     fix_error,
     get_error_message,
-    get_opt_dir,
+    log_error,
     set_status_for_newly_submitted_job,
     update_job_name,
 )
@@ -50,6 +51,36 @@ def test_get_error_message_two_message(tmp_path):
     assert error_messages == ["ZBRENT: fatal error in bracketing", "error A test error"]
 
 
+def test_log_error_no_prev_errors_1_error(tmp_path):
+    job_path = os.path.join(tmp_path, "job_path")
+    home_path = os.path.join(tmp_path, "fake_home")
+    os.mkdir(job_path)
+    os.mkdir(home_path)
+    shutil.copy("test/test_files/failed_u_run/ll_out", job_path)
+    log_error(job_path, home_path)
+    assert os.path.exists(os.path.join(home_path, "error_log.dat"))
+    error_log = open(os.path.join(home_path, "error_log.dat"))
+    log_file = error_log.read()
+    assert f"{job_path}" in log_file
+    assert "ZBRENT: fatal error in bracketing" in log_file
+
+
+def test_log_error_prev_errors(tmp_path):
+    job_path = os.path.join(tmp_path, "job_path")
+    home_path = os.path.join(tmp_path, "fake_home")
+    os.mkdir(job_path)
+    os.mkdir(home_path)
+    shutil.copy("test/test_files/failed_u_run/ll_out", job_path)
+    log_error(job_path, home_path)
+    log_error(job_path, home_path)
+    assert os.path.exists(os.path.join(home_path, "error_log.dat"))
+    error_log = open(os.path.join(home_path, "error_log.dat"))
+    log_file = error_log.readline()
+    assert f"{job_path}" in log_file
+    assert "ZBRENT: fatal error in bracketing" in log_file
+    log_file = error_log.readline()
+    assert f"{job_path}" in log_file
+    assert "ZBRENT: fatal error in bracketing" in log_file
 
 
 def test_fix_error_ZBRENT_no_CONTCAR(tmp_path):
