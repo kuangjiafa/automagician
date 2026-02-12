@@ -11,7 +11,6 @@ import automagician.constants as constants
 import automagician.create_job as create_job
 import automagician.finish_job as finish_job
 import automagician.machine as machine_file
-import automagician.update_job as update_job
 from automagician.classes import (
     DosJob,
     GoneJob,
@@ -126,6 +125,8 @@ def process_opt(
     if is_running:
         logger.debug(f"job in {job_directory} is running, do nothing")
         step, force, energy = get_residueSFE(job_directory)
+        import automagician.update_job as update_job
+
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
         )
@@ -146,6 +147,8 @@ def process_opt(
     if check_error(job_directory):
         logger.warning(f"job in {job_directory} failed!")
         opt_jobs[job_directory].status = JobStatus.ERROR
+        import automagician.update_job as update_job
+
         update_job.log_error(job_directory, home_dir)
         error_fixed = update_job.fix_error(
             job_directory=job_directory,
@@ -362,6 +365,8 @@ def process_unconverged(
         logger.debug("contcar exists -> wrap up")
         finish_job.wrap_up(job_directory)
         step, force, energy = get_residueSFE(job_directory)
+        import automagician.update_job as update_job
+
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
         )
@@ -571,6 +576,8 @@ def _get_submitted_jobs_slurm(
 
         job_type = classify_job_dir(job_dir)
         if job_type in ["dos", "sc"]:
+            import automagician.update_job as update_job
+
             opt_dir = update_job.get_opt_dir(job_dir)
             if opt_dir not in dos_jobs:
                 dos_jobs[opt_dir] = DosJob(
@@ -588,6 +595,8 @@ def _get_submitted_jobs_slurm(
                 dos_jobs[opt_dir].sc_status = job_status
                 dos_jobs[opt_dir].sc_last_on = machine
         elif job_type == "wav":
+            import automagician.update_job as update_job
+
             opt_dir = update_job.get_opt_dir(job_dir)
             if opt_dir not in wav_jobs:
                 wav_jobs[opt_dir] = WavJob(
@@ -821,6 +830,8 @@ def submit_queue(
         sub_queue_index = 0
         while sub_queue_index < num_to_sub_there:
             job_dir = sub_queue[sub_queue_index]
+            import automagician.update_job as update_job
+
             update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
             new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
             machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
@@ -840,6 +851,8 @@ def submit_queue(
                 logger.warning(
                     f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                 )
+            import automagician.update_job as update_job
+
             update_job.set_status_for_newly_submitted_job(
                 job_dir,
                 machine,
@@ -888,6 +901,8 @@ def submit_queue(
                         ["sbatch", machine_file.get_subfile(Machine(i + 2))]
                     )
                 else:
+                    import automagician.update_job as update_job
+
                     update_job.switch_subfile(
                         job_dir,
                         machine_file.get_subfile(Machine(i + 2)),
@@ -897,6 +912,8 @@ def submit_queue(
                     add_to_insta_submit(
                         job_dir, machine_file.get_machine_name(Machine(i + 2)), database
                     )
+                import automagician.update_job as update_job
+
                 update_job.set_status_for_newly_submitted_job(
                     job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
                 )
