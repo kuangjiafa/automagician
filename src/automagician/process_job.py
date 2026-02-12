@@ -93,7 +93,10 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                small_functions.scp_get_dir(
+                # mypy thinks config could be "NoSSH" here, but we checked above.
+                # However, scp_get_dir expects SshScp, which is not imported here to avoid cycles.
+                # Casting or ignoring for now as we know it's safe at runtime.
+                machine_file.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -675,8 +678,8 @@ def get_submitted_jobs(
                 if dos_jobs[job_dir].sc_last_on == machine:
                     dos_jobs[job_dir].sc_status = JobStatus.INCOMPLETE
             if dos_jobs[job_dir].dos_status == JobStatus.RUNNING:
-                tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] = (
-                    tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
+                tacc_queue_sizes[dos_jobs[job_dir].dos_last_on - 2] = (
+                    tacc_queue_sizes[dos_jobs[job_dir].dos_last_on - 2] + 1
                 )
                 if dos_jobs[job_dir].dos_last_on == machine:
                     dos_jobs[job_dir].dos_status = JobStatus.INCOMPLETE

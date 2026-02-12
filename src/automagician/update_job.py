@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code,cyclic-import
 import datetime
 import logging
 import os
@@ -77,6 +79,8 @@ def fix_error(
       True if a fix was attempted,
     Changes:
       Resubmits the job iff a fix was attempted"""
+    import automagician.finish_job as finish_job
+
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
     for error_message in error_messages:
