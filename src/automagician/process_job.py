@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -21,7 +21,9 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-import automagician.database
+
+if TYPE_CHECKING:
+    from automagician.database import Database
 
 try:
     from automagician.classes import SshScp
@@ -712,7 +714,7 @@ def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
 
 
 def gone_job_check(
-        database: "automagician.database.Database",
+        database: "Database",
         opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -780,7 +782,7 @@ def submit_queue(
         opt_jobs: Dict[str, OptJob],
         dos_jobs: Dict[str, DosJob],
         wav_jobs: Dict[str, WavJob],
-        database: "automagician.database.Database",
+        database: "Database",
         limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -914,7 +916,7 @@ def submit_queue(
 
 
 def add_to_insta_submit(
-        job_dir: str, machine: str, database: "automagician.database.Database"
+        job_dir: str, machine: str, database: "Database"
 ) -> None:
     """Adds the jobs in job_dir into insta_submit
 
