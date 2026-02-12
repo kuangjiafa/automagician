@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -21,7 +21,9 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-import automagician.database
+
+if TYPE_CHECKING:
+    import automagician.database
 
 try:
     from automagician.classes import SshScp
@@ -194,7 +196,7 @@ def check_error(job_directory: str) -> bool:
                 if "I REFUSE TO CONTINUE WITH THIS SICK JOB" in line:
                     error_found = True
                     break
-    except EnvironmentError:
+    except OSError:
         return False
 
     if error_found:
@@ -295,12 +297,9 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     try:
         with open(ll_out, "r", errors="ignore") as f:
             for line in f:
-                if (
-                        "reached required accuracy - stopping structural energy minimisation"
-                        in line
-                ):
+                if "reached required accuracy - stopping structural energy minimisation" in line:
                     return True
-    except EnvironmentError:
+    except OSError:
         return False
     return False
 
