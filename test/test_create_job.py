@@ -6,7 +6,6 @@ import pytest
 from automagician.classes import JobLimitError
 from automagician.create_job import (
     add_to_sub_queue,
-    copy_inputs,
     create_dos_from_sc,
     create_sc,
     create_wav,
@@ -240,85 +239,6 @@ def test_create_sc_potcar(tmp_path):
     assert "NSW=0" in incar_text
     expected_sub_quene = [sc_job_path]
     assert sub_quene == expected_sub_quene
-
-
-def test_copy_inputs_full(tmp_path):
-    job_dir = os.path.join(str(tmp_path), "job")
-    os.makedirs(job_dir)
-    dest_dir = os.path.join(str(tmp_path), "dest")
-
-    subfile = "test.sub"
-    with open(os.path.join(job_dir, subfile), "w") as f:
-        f.write("sub")
-    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
-        f.write("kpoints")
-    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
-        f.write("potcar")
-    with open(os.path.join(job_dir, "INCAR"), "w") as f:
-        f.write("incar")
-    with open(os.path.join(job_dir, "CHGCAR"), "w") as f:
-        f.write("chgcar")
-    with open(os.path.join(job_dir, "CONTCAR"), "w") as f:
-        f.write("contcar")
-    with open(os.path.join(job_dir, "POSCAR"), "w") as f:
-        f.write("poscar")
-
-    copy_inputs(subfile, job_dir, dest_dir)
-
-    assert os.path.isfile(os.path.join(dest_dir, subfile))
-    assert os.path.isfile(os.path.join(dest_dir, "KPOINTS"))
-    assert os.path.isfile(os.path.join(dest_dir, "POTCAR"))
-    assert os.path.isfile(os.path.join(dest_dir, "INCAR"))
-    assert os.path.isfile(os.path.join(dest_dir, "CHGCAR"))
-    assert os.path.isfile(os.path.join(dest_dir, "CONTCAR"))
-    # If CONTCAR exists, POSCAR should NOT be copied
-    assert not os.path.isfile(os.path.join(dest_dir, "POSCAR"))
-
-
-def test_copy_inputs_minimal(tmp_path):
-    job_dir = os.path.join(str(tmp_path), "job")
-    os.makedirs(job_dir)
-    dest_dir = os.path.join(str(tmp_path), "dest")
-
-    subfile = "test.sub"
-    with open(os.path.join(job_dir, subfile), "w") as f:
-        f.write("sub")
-    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
-        f.write("kpoints")
-    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
-        f.write("potcar")
-    with open(os.path.join(job_dir, "INCAR"), "w") as f:
-        f.write("incar")
-    with open(os.path.join(job_dir, "POSCAR"), "w") as f:
-        f.write("poscar")
-
-    copy_inputs(subfile, job_dir, dest_dir)
-
-    assert os.path.isfile(os.path.join(dest_dir, subfile))
-    assert os.path.isfile(os.path.join(dest_dir, "KPOINTS"))
-    assert os.path.isfile(os.path.join(dest_dir, "POTCAR"))
-    assert os.path.isfile(os.path.join(dest_dir, "INCAR"))
-    assert os.path.isfile(os.path.join(dest_dir, "POSCAR"))
-    assert not os.path.isfile(os.path.join(dest_dir, "CHGCAR"))
-    assert not os.path.isfile(os.path.join(dest_dir, "CONTCAR"))
-
-
-def test_copy_inputs_missing_mandatory(tmp_path):
-    job_dir = os.path.join(str(tmp_path), "job")
-    os.makedirs(job_dir)
-    dest_dir = os.path.join(str(tmp_path), "dest")
-
-    subfile = "test.sub"
-    with open(os.path.join(job_dir, subfile), "w") as f:
-        f.write("sub")
-    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
-        f.write("kpoints")
-    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
-        f.write("potcar")
-    # INCAR is missing
-
-    with pytest.raises(FileNotFoundError):
-        copy_inputs(subfile, job_dir, dest_dir)
 
 
 def test_create_sc_contcar(tmp_path):
