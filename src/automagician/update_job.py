@@ -8,8 +8,6 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
@@ -108,6 +106,8 @@ def fix_error(
       Resubmits the job iff a fix was attempted"""
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
+    import automagician.finish_job as finish_job
+
     for error_message in error_messages:
         if "ZBRENT" in error_message:
             contcar_path = os.path.join(job_directory, "CONTCAR")
@@ -261,6 +261,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
+
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
