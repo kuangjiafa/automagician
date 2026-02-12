@@ -6,10 +6,12 @@ try:
     from fabric import Connection
     from fabric.transfer import Transfer
 
+
     @dataclass
     class SshScp:
         ssh: Connection
         scp: Transfer
+
 
     @dataclass
     class SSHConfig:

@@ -2,7 +2,6 @@ import datetime
 import logging
 import os
 import re
-import shlex
 import socket
 import subprocess
 from os.path import exists
@@ -45,7 +44,10 @@ def get_machine_number() -> Machine:
 
 
 def ssh_scp_init(
-    machine: Machine, home_dir: str, balance: bool, logger: logging.Logger
+        machine: Machine,
+        home_dir: str,
+        balance: bool,
+        logger: logging.Logger
 ) -> SSHConfig:
     """Initializes ssh and sets the no_ssh variable appropriately
 
@@ -69,21 +71,21 @@ def ssh_scp_init(
         if no_fabric:
             logger.warning("you need fabric for ssh to work")
             return SSHConfig(config="NoSSH")
-    else:
-        return SSHConfig(config="NoSSH")
-
-    try:
-        ssh = fabric.Connection(
-            user=os.environ["USER"],
-            host=hostname,
-            connect_kwargs={"key_filename": home_dir + "/.ssh/automagician_id_rsa"},
-            config=fabric.config.Config(overrides={"warn": True}),
-        )
-        scp = fabric.transfer.Transfer(ssh)
-        ssh.run("hostname")
-    except Exception:
-        logger.warning("you need fri-halifax keys for ssh to work")
-        return SSHConfig(config="NoSSH")
+        else:
+            try:
+                ssh = fabric.Connection(
+                    user=os.environ["USER"],
+                    host=hostname,
+                    connect_kwargs={
+                        "key_filename": home_dir + "/.ssh/automagician_id_rsa"
+                    },
+                    config=fabric.config.Config(overrides={"warn": True}),
+                )
+                scp = fabric.transfer.Transfer(ssh)
+                ssh.run("hostname")
+            except Exception:
+                logger.warning("you need fri-halifax keys for ssh to work")
+                return SSHConfig(config="NoSSH")
     return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
 
 
@@ -127,28 +129,14 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
     """
     logger = logging.getLogger()
     if not os.path.isdir(constants.LOCK_DIR):
-        os.makedirs(constants.LOCK_DIR, mode=0o700)
-    else:
-        stat_info = os.stat(constants.LOCK_DIR)
-        if stat_info.st_uid != os.getuid():
-            raise PermissionError(f"{constants.LOCK_DIR} is not owned by the current user.")
-        if (stat_info.st_mode & 0o777) != 0o700:
-            os.chmod(constants.LOCK_DIR, 0o700)
+        os.makedirs(constants.LOCK_DIR)
+        subprocess.run(["chmod", "777", constants.LOCK_DIR])
 
     if machine < 2 and ssh_config.config != "NoSSH":
-        # Check remote directory existence and ownership securely
-        # Assuming remote is Linux (stat -c %u)
-        cmd = (
-            f'if [ ! -d "{constants.LOCK_DIR}" ]; then '
-            f'mkdir -p -m 700 "{constants.LOCK_DIR}"; '
-            f'else '
-            f'if [ "$(stat -c \'%u\' "{constants.LOCK_DIR}")" -ne "$(id -u)" ]; then '
-            f'echo "Remote lock directory owned by another user" >&2; exit 1; '
-            f'fi; '
-            f'chmod 700 "{constants.LOCK_DIR}"; '
-            f'fi'
-        )
-        ssh_config.config.ssh.run(cmd)
+        if not ssh_config.config.ssh.run(
+                "test -d " + constants.LOCK_DIR, warn=True, hide=True
+        ).ok:
+            ssh_config.config.ssh.run("mkdir -p " + constants.LOCK_DIR)
 
     if exists(constants.LOCK_FILE):
         logger.error(
@@ -164,14 +152,14 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
         machine < 2
         and ssh_config.config != "NoSSH"
         and ssh_config.config.ssh.run(
-            "test -e " + shlex.quote(constants.LOCK_FILE), warn=True, hide=True
+            "test -e " + constants.LOCK_FILE, warn=True, hide=True
         ).ok
     ):
         logger.error(
             "it looks like you already have a remote instance of automagician running--please wait for it to finish. thank you! :)",
         )
         logger.error("other automagician process's details:")
-        ssh_config.config.ssh.run("cat " + shlex.quote(constants.LOCK_FILE))
+        ssh_config.config.ssh.run("cat " + constants.LOCK_FILE)
         logger.error(
             f"if you'd like to override the lock, you can delete {constants.LOCK_FILE} on the remote machine and rerun your process",
         )
@@ -182,7 +170,7 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
             f.write(lockstring)
         if machine < 2 and ssh_config.config != "NoSSH":
             ssh_config.config.ssh.run(
-                f"echo {shlex.quote(lockstring)} > {shlex.quote(constants.LOCK_FILE)}"
+                'echo "' + lockstring + '" > ' + constants.LOCK_FILE
             )
 
 
@@ -216,48 +204,24 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     cwd = os.getcwd()
     os.chdir(local)
     for f in (
-        subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-        .stdout.decode("utf-8")
-        .split("\n")
+            subprocess.run(["find", ".", "-type", "f"], capture_output=True)
+                    .stdout.decode("utf-8")
+                    .split("\n")
     ):
         if len(f) < 1:
             continue
         dirname = os.path.dirname(remote + f[1:])
-        ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
-        ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
+        ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
+        ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
     os.chdir(cwd)
-
-
-if not no_fabric:
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        # We assume ssh_scp is SshScp here, but we use object to match signature
-        # This is a bit of a hack to please mypy without importing SshScp globally if not available
-        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
-        for f in real_ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            real_ssh_scp.scp.get(remote + f, local + f)
-else:
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
-        pass
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
     """Removes the lockfile and closes ssh if connected via SSH"""
     subprocess.call(["rm", constants.LOCK_FILE])
     if machine < 2 and ssh_config.config != "NoSSH":
-        ssh_config.config.ssh.run("rm " + shlex.quote(constants.LOCK_FILE))  # type: ignore
-        ssh_config.config.ssh.close()  # type: ignore
+        ssh_config.ssh.run("rm " + constants.LOCK_FILE)  # type: ignore
+        ssh_config.ssh.close()  # type: ignore
     exit()
 
 
