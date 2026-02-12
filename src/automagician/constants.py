@@ -1,7 +1,7 @@
 import os
 
-LOCK_FILE = f"/tmp/automagician/{os.environ['USER']}-lock"
-LOCK_DIR = "/tmp/automagician"
+LOCK_DIR = f"/tmp/automagician-{os.environ['USER']}"
+LOCK_FILE = os.path.join(LOCK_DIR, "lock")
 DB_NAME = "automagician.db"
 AUTOMAGIC_REMOTE_DIR = "/automagician_jobs"
 DEFAULT_SUBFILE = "~/fri.sub"
