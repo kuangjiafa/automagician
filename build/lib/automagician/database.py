@@ -29,7 +29,7 @@ class Database:
         has_gone = False
         has_insta_submit = False
         for table in self.db.execute(
-            "select name from sqlite_master where type='table'"
+                "select name from sqlite_master where type='table'"
         ):
             if table[0] == "opt_jobs":
                 has_opt = True
@@ -115,35 +115,18 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the dos jobs associated with said job directory"""
         dos_jobs = {}
-        # Use LEFT JOIN to handle orphaned dos_jobs rows
-        query = """
-            SELECT d.opt_id, d.sc_status, d.dos_status, d.sc_last_on, d.dos_last_on, o.dir
-            FROM dos_jobs d
-            LEFT JOIN opt_jobs o ON d.opt_id = o.rowid
-        """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute("select * from dos_jobs").fetchall():
             opt_id = job[0]
-            sc_status = JobStatus(job[1])
-            dos_status = JobStatus(job[2])
-            sc_last_on = Machine(job[3])
-            dos_last_on = Machine(job[4])
-            opt_dir = job[5] if job[5] is not None else ""
-
-            # Skip orphaned rows where opt_jobs entry is missing
-            if opt_dir is None:
-                logging.warning(
-                    "Skipping orphaned dos_job with opt_id=%s (no matching opt_job)",
-                    opt_id,
-                )
-                continue
-
+            opt_dir = self.get_string_from_db(
+                "select dir from opt_jobs where rowid = " + str(opt_id)
+            )
             dos_dir = os.path.join(opt_dir, "dos")
             dos_jobs[dos_dir] = DosJob(
-                opt_id=opt_id,
-                sc_status=sc_status,
-                dos_status=dos_status,
-                sc_last_on=sc_last_on,
-                dos_last_on=dos_last_on,
+                opt_id=job[0],
+                sc_status=JobStatus(job[1]),
+                dos_status=JobStatus(job[2]),
+                sc_last_on=Machine(job[3]),
+                dos_last_on=Machine(job[4]),
             )
         return dos_jobs
 
@@ -154,29 +137,14 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the wav jobs associated with said job directory"""
         wav_jobs = {}
-        # Use LEFT JOIN to handle orphaned wav_jobs rows
-        query = """
-            SELECT w.opt_id, w.wav_status, w.wav_last_on, o.dir
-            FROM wav_jobs w
-            LEFT JOIN opt_jobs o ON w.opt_id = o.rowid
-        """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute("select * from wav_jobs").fetchall():
             opt_id = job[0]
-            wav_status = JobStatus(job[1])
-            wav_last_on = Machine(job[2])
-            opt_dir = job[3] if job[3] is not None else ""
-
-            # Skip orphaned rows where opt_jobs entry is missing
-            if opt_dir is None:
-                logging.warning(
-                    "Skipping orphaned wav_job with opt_id=%s (no matching opt_job)",
-                    opt_id,
-                )
-                continue
-
+            opt_dir = self.get_string_from_db(
+                "select dir from opt_jobs where rowid = " + str(opt_id)
+            )
             wav_dir = os.path.join(opt_dir, "wav")
             wav_jobs[wav_dir] = WavJob(
-                opt_id=opt_id, wav_status=wav_status, wav_last_on=wav_last_on
+                opt_id=job[0], wav_status=JobStatus(job[1]), wav_last_on=Machine(job[2])
             )
         return wav_jobs
 
@@ -197,10 +165,10 @@ class Database:
         return gone_jobs
 
     def write_job_statuses(
-        self,
-        opt_jobs: Dict[str, OptJob],
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
+            self,
+            opt_jobs: Dict[str, OptJob],
+            dos_jobs: Dict[str, DosJob],
+            wav_jobs: Dict[str, WavJob],
     ) -> None:
         """Updates the database to include the jobs in opt_jobs, dos_jobs, and wav_jobs
 
@@ -214,8 +182,6 @@ class Database:
         import automagician.update_job as update_job
 
         logger = logging.getLogger()
-        import automagician.update_job as update_job
-
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
 
@@ -243,7 +209,7 @@ class Database:
         logger.info("automagician.db updated")
 
     def add_opt_job_to_db(
-        self, job_to_add: OptJob, opt_dir: str, commit: bool = True
+            self, job_to_add: OptJob, opt_dir: str, commit: bool = True
     ) -> None:
         """Adds (or updates) a opt_job in the database.
 
@@ -285,11 +251,11 @@ class Database:
             self.db.connection.commit()
 
     def add_dos_job_to_db(
-        self,
-        job_to_add: DosJob,
-        opt_dir: Optional[str] = None,
-        commit: bool = True,
-        add_opt_id: bool = True,
+            self,
+            job_to_add: DosJob,
+            opt_dir: Optional[str] = None,
+            commit: bool = True,
+            add_opt_id: bool = True,
     ) -> None:
         """Adds (or updates) a dos_job in the database.
 
@@ -356,11 +322,11 @@ class Database:
             self.db.connection.commit()
 
     def add_wav_job_to_db(
-        self,
-        job_to_add: WavJob,
-        opt_dir: Optional[str] = None,
-        commit: bool = True,
-        add_opt_id: bool = True,
+            self,
+            job_to_add: WavJob,
+            opt_dir: Optional[str] = None,
+            commit: bool = True,
+            add_opt_id: bool = True,
     ) -> None:
         """Adds (or updates) a wav_job in the database.
 

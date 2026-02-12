@@ -1,8 +1,8 @@
 import logging
-
 import os
+
 from automagician.classes import Machine, SSHConfig
-from automagician.machine import is_oden, is_tacc, ssh_scp_init, get_machine_number
+from automagician.machine import get_machine_number, is_oden, is_tacc, ssh_scp_init
 
 
 def test_is_oden():
