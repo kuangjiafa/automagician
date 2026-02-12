@@ -80,14 +80,6 @@ def give_certificate(job_directory: str) -> int:
         return 0
     except FileExistsError:
         return 1
-    # if os.path.isfile(constants.CONVERGENCE_CERTIFICATE_NAME):
-    #     continue
-    # else:
-    # create convergence certificate
-    #    with open(
-    #        os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-    #    ) as cert:
-    #        pass
 
 
 def sc_is_complete(sc_dir: str) -> bool:

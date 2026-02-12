@@ -812,11 +812,9 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
   Tests
     TODO: Medium priority
       Simple, something not critical""" 
-  error_log = open(home+"/error_log.dat","a+")
-  
-  for error_message in get_error_message(job_directory):
-    #TODO: ^ Can return a string, and does not always return a list
-    error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
+  with open(home+"/error_log.dat","a+") as error_log:
+    for error_message in get_error_message(job_directory):
+      error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
 
 def get_error_message(job_directory): 
   """Gets the error message from ll_out and returns all found
@@ -825,21 +823,17 @@ def get_error_message(job_directory):
   Returns:
     list(str): A list of error messages iff error messages were found
 
-    str: message not found iff no messages were found
   Changes:
     Changes current working direcctory to job_directory
   Tests
     Not Planned"""
   # Grep is likely faster, can use grep -i
   os.chdir(job_directory)
-  ll_out = open('ll_out','r')
   messages=[]
-  for line in ll_out:
-    if ("ERROR" in line) or ("error" in line):
-      messages.append(line)
-  if len(messages) == 0:
-    return "message not found!" 
-    #WHY!, why not wrap this up in the same list, so the types are the same 
+  with open('ll_out','r') as ll_out:
+    for line in ll_out:
+      if ("ERROR" in line) or ("error" in line):
+        messages.append(line)
   return messages
 
 def fix_error(job_directory):
