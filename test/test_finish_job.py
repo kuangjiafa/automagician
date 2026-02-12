@@ -3,7 +3,6 @@ import shutil
 import time
 
 import automagician.constants as constants
-
 from automagician.finish_job import (
     dos_is_complete,
     give_certificate,
@@ -155,7 +154,5 @@ def test_wav_is_complete_old_file(tmp_path):
 
 
 def test_give_duplicate_certificate(tmp_path):
-    open(
-        os.path.join(tmp_path, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-    )
+    open(os.path.join(tmp_path, constants.CONVERGENCE_CERTIFICATE_NAME), "x")
     assert give_certificate(tmp_path) == 1

@@ -15,11 +15,11 @@ from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 
 def add_preliminary_results(
-        job_directory: str,
-        step: int,
-        force: float,
-        energy: float,
-        preliminary_results: TextIO,
+    job_directory: str,
+    step: int,
+    force: float,
+    energy: float,
+    preliminary_results: TextIO,
 ) -> None:
     """Adds the job directory, step number, force, and energy to the file in preliminary_results"""
     preliminary_results.write(str(job_directory) + "\n")
@@ -67,7 +67,7 @@ def get_error_message(job_directory: str) -> list[str]:
 
 
 def fix_error(
-        job_directory: str,
+    job_directory: str,
 ) -> bool:
     """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
     Args:
@@ -84,11 +84,13 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
+
             finish_job.wrap_up(job_directory)
             return True
         elif (
-                "number of potentials on File POTCAR incompatible with number"
-                in error_message
+            "number of potentials on File POTCAR incompatible with number"
+            in error_message
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
@@ -119,11 +121,10 @@ def update_job_name(subfile: str) -> None:
     script_lines = script.readlines()
     script.close()
     with open(subfile, "w") as script:
+        cwd_str = os.getcwd().replace("/", "_")
         for line in script_lines:
             if "-J" in line or "--job-name=" in line:
-                script.write(
-                    "#SBATCH -J " + "AM_" + os.getcwd().replace("/", "_") + "\n"
-                )
+                script.write("#SBATCH -J " + "AM_" + cwd_str + "\n")
             else:
                 script.write(line)
 
@@ -171,10 +172,10 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
 
 
 def switch_subfile(
-        job_dir: str,
-        new_sub: str,
-        subfile: str,
-        machine: Machine,
+    job_dir: str,
+    new_sub: str,
+    subfile: str,
+    machine: Machine,
 ) -> None:
     """Copies the subfile into new_sub and updates the job_name of new_sub
 
@@ -205,12 +206,12 @@ def switch_subfile(
 
 
 def set_status_for_newly_submitted_job(
-        job_dir: str,
-        job_machine: Machine,
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        opt_jobs: Dict[str, OptJob],
-        error: bool,
+    job_dir: str,
+    job_machine: Machine,
+    dos_jobs: Dict[str, DosJob],
+    wav_jobs: Dict[str, WavJob],
+    opt_jobs: Dict[str, OptJob],
+    error: bool,
 ) -> None:
     """Sets the job status to that of special jobs that no longer need to be optoomised
 

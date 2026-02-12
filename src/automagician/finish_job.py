@@ -11,6 +11,8 @@ def optimizer_review(job_directory: str) -> None:
     Goal seems to be to combine XDATCAR and FE
 
     Changes INCAR by adjusting INBARIAR to the most correct option
+    
+    TODO: determine if this method is still relevant in current usage.
     """
     logger = logging.getLogger()
     logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
@@ -37,41 +39,42 @@ def wrap_up(job_directory: str) -> None:
     # first find name
     cwd = os.getcwd()
     os.chdir(job_directory)
-    try:
-        directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
-        runs = [f for f in directories if "run" in f]
-        # if no runs, wrap up into run0
-        if len(runs) == 0:
-            subprocess.run(
-                [constants.V_FIN_PL_PATH, "run0"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            shutil.move(
-                os.path.join(job_directory, "ll_out"), os.path.join(job_directory, "run0")
-            )
-        else:
-            # find the largest run
-            largest_number = 0
-            for run in runs:
-                try:
-                    number = int(run.partition("run")[2])
-                    if number >= largest_number:
-                        largest_number = number + 1
-                except Exception:
-                    continue
+    directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
+    runs = [f for f in directories if "run" in f]
+    # if no runs, wrap up into run0
+    if len(runs) == 0:
+        subprocess.run(
+            [constants.V_FIN_PL_PATH, "run0"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+        shutil.move(
+            os.path.join(job_directory, "ll_out"), os.path.join(job_directory, "run0")
+        )
+    else:
+        # find the largest run
+        largest_number = 0
+        for run in runs:
+            try:
+                number = int(run.partition("run")[2])
+                if number >= largest_number:
+                    largest_number = number + 1
+            except Exception:
+                continue
 
-            largest_run = f"run{largest_number}"
-            subprocess.run(
-                [constants.V_FIN_PL_PATH, largest_run],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            shutil.move("ll_out", largest_run)
-            logger.warning("combine_XDAT_FE disabled due to bugs")
-        optimizer_review(job_directory)
-    finally:
-        os.chdir(cwd)
+        largest_run = f"run{largest_number}"
+        subprocess.run(
+            [constants.V_FIN_PL_PATH, largest_run],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+        shutil.move("ll_out", largest_run)
+        logger.warning("combine_XDAT_FE disabled due to bugs")
+
+    import automagician.update_job as update_job
+
+    update_job.optimizer_review(job_directory)
+    os.chdir(cwd)
 
 
 def give_certificate(job_directory: str) -> int:

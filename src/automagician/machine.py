@@ -45,10 +45,7 @@ def get_machine_number() -> Machine:
 
 
 def ssh_scp_init(
-        machine: Machine,
-        home_dir: str,
-        balance: bool,
-        logger: logging.Logger
+    machine: Machine, home_dir: str, balance: bool, logger: logging.Logger
 ) -> SSHConfig:
     """Initializes ssh and sets the no_ssh variable appropriately
 
