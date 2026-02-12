@@ -215,7 +215,7 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
       None
     """
     if ssh_config.config == "NoSSH":
-        raise ValueError("SSH configuration is required for scp_put_dir")
+        raise ValueError("SSH configuration is required for scp_put_dir. Please provide a valid SSHConfig with SSH enabled.")
     
     cwd = os.getcwd()
     try:
