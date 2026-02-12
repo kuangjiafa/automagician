@@ -5,6 +5,7 @@ import inspect
 import subprocess
 import os
 import time
+# pylint: skip-file
 import datetime
 import gzip
 import re
@@ -813,7 +814,7 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
     TODO: Medium priority
       Simple, something not critical""" 
   error_log = open(home+"/error_log.dat","a+")
-  
+
   for error_message in get_error_message(job_directory):
     #TODO: ^ Can return a string, and does not always return a list
     error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
@@ -838,8 +839,8 @@ def get_error_message(job_directory):
     if ("ERROR" in line) or ("error" in line):
       messages.append(line)
   if len(messages) == 0:
-    return "message not found!" 
-    #WHY!, why not wrap this up in the same list, so the types are the same 
+    return "message not found!"
+    #WHY!, why not wrap this up in the same list, so the types are the same
   return messages
 
 def fix_error(job_directory):
@@ -1902,7 +1903,13 @@ def update_job_name(subfile_name):
 
 def give_certificate():
   """creates a convergence certuficate, printing any errors to standard output"""
-  subprocess.call(['touch','convergence_certificate'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+  try:
+    with open('convergence_certificate', 'x'):
+      pass
+  except FileExistsError:
+    pass
+  except Exception:
+    subprocess.call(['touch','convergence_certificate'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 def check_certificate():
   """Returns true if there is a convergence_certificate in the current direcoty

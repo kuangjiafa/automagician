@@ -8,27 +8,10 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
+import automagician.finish_job as finish_job
+import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
-try:
-    from automagician.classes import SshScp
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
@@ -57,15 +40,6 @@ def log_error(job_directory: str, home: str) -> None:
     Tests
       TODO: Medium priority
         Simple, something not critical"""
-    # error_log = open(os.path.join(home, "error_log.dat"), "a+")
-    # potentially create an error buffer and write the errors all at once in the end? potentially a bad idea in case of a crash though/not sure if the speedup would be non-negligible
-    # for error_message in get_error_message(job_directory):
-    #     error_log.write(
-    #         f"{str(datetime.datetime.now())} {job_directory} {error_message} \n"
-    #     )
-    # error_log.close()
-
-    # TODO: verify that this change doesn't
     with open(os.path.join(home, "error_log.dat"), "a+") as error_log:
         for error_message in get_error_message(job_directory):
             error_log.write(
@@ -120,33 +94,22 @@ def fix_error(
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
-            subprocess.call(
-                [constants.SORT_POS_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            subprocess.call(
-                [constants.SO_GET_SOFT_PBE_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            os.chdir(cwd)
+            try:
+                subprocess.call(
+                    [constants.SORT_POS_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+                subprocess.call(
+                    [constants.SO_GET_SOFT_PBE_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+            finally:
+                os.chdir(cwd)
             return True
     logger.info(f"a fix was not attempted for the job at {job_directory}")
     return False
-
-
-# if CG isn't working, use Damped molecular dynamics
-def optimizer_review(job_directory: str) -> None:
-    """Returns None
-     --- What I think it wants to do below ---
-    Goal seems to be to combine XDATCAR and FE
-
-    Changes INCAR by adjusting INBARIAR to the most correct option
-    """
-    logger = logging.getLogger()
-    logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
-    return None
 
 
 def update_job_name(subfile: str) -> None:
@@ -208,11 +171,6 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     write_incar.close()
 
 
-def get_opt_dir(job_dir: str) -> str:
-    """Replaces the dos sc and wav's that could be in a directory with nothing  to turn them into opt jobs"""
-    return re.compile(r"\/(dos|sc|wav)$").sub("", str(job_dir))
-
-
 def switch_subfile(
     job_dir: str,
     new_sub: str,
@@ -227,20 +185,24 @@ def switch_subfile(
         new_sub:
         subfile: The name of the subfile
         machine:"""
-    os.chdir(job_dir)
+    cwd = os.getcwd()
+    try:
+        os.chdir(job_dir)
 
-    if not exists(subfile):
-        return
+        if not exists(subfile):
+            return
 
-    default_subfile_path = (
-        constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
-        if machine < 2
-        else constants.DEFAULT_SUBFILE_PATH_TACC
-    )
+        default_subfile_path = (
+            constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
+            if machine < 2
+            else constants.DEFAULT_SUBFILE_PATH_TACC
+        )
 
-    subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
-    # os.remove(old_sub)
-    update_job_name(new_sub)
+        subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
+        # os.remove(old_sub)
+        update_job_name(new_sub)
+    finally:
+        os.chdir(cwd)
 
 
 def set_status_for_newly_submitted_job(
@@ -259,9 +221,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
-    import automagician.process_job as process_job
-    job_type = process_job.classify_job_dir(job_dir)
-    opt_dir = get_opt_dir(job_dir)
+    job_type = small_functions.classify_job_dir(job_dir)
+    opt_dir = small_functions.get_opt_dir(job_dir)
 
     # for now, status -1 is for special jobs that no longer need optimization
     if job_type == "sc":

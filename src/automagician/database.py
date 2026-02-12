@@ -3,6 +3,7 @@ import os
 import sqlite3
 from typing import Dict, Optional
 
+import automagician.small_functions as small_functions
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 
 
@@ -185,7 +186,7 @@ class Database:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
 
         for job_dir in dos_jobs:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             try:
                 self.add_dos_job_to_db(dos_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
@@ -195,7 +196,7 @@ class Database:
                 continue
 
         for job_dir in wav_jobs:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             try:
                 self.add_wav_job_to_db(wav_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
