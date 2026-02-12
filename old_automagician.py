@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# pylint: disable=duplicate-code
 
 import cProfile
 import inspect
