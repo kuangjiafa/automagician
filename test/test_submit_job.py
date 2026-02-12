@@ -489,7 +489,7 @@ def test_get_submitted_jobs_tacc_wav_jobs(monkeypatch):
     )
     
     # Verify queue size incremented for RUNNING jobs (job1 and job2)
-    # Queue array indices: [STAMPEDE2=0, FRONTERA=1, LS6=2] (machine_id - 2)
+    # Queue array indices by machine: [STAMPEDE2_TACC at 0, FRONTERA_TACC at 1, LS6_TACC at 2]
     assert tacc_queue_sizes[Machine.STAMPEDE2_TACC - 2] == 1  # job1
     assert tacc_queue_sizes[Machine.FRONTERA_TACC - 2] == 1  # job2
     assert tacc_queue_sizes[Machine.LS6_TACC - 2] == 0  # no jobs
