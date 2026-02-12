@@ -5,11 +5,10 @@ import re
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, Optional, TextIO
+from typing import Dict, Literal, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
@@ -245,6 +244,27 @@ def switch_subfile(
     update_job_name(new_sub)
 
 
+def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
+    """Returns the type of job this is based on the ending directory name.
+
+    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
+    this would return "sc", and if it ended in /wav returns "wav".
+    Finally if it does not match any of the following returns "opt"
+    """
+    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
+    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
+    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
+
+    if is_dos_regex.match(str(os.path.normpath(job_dir))):
+        return "dos"
+    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
+        return "sc"
+    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
+        return "wav"
+    else:
+        return "opt"
+
+
 def set_status_for_newly_submitted_job(
         job_dir: str,
         job_machine: Machine,
@@ -261,7 +281,7 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
-    job_type = process_job.classify_job_dir(job_dir)
+    job_type = classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
     # for now, status -1 is for special jobs that no longer need optimization
