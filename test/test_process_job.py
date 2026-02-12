@@ -11,7 +11,6 @@ from automagician.machine import get_subfile
 from automagician.process_job import (
     check_error,
     check_has_opt,
-    classify_job_dir,
     determine_box_convergence,
     determine_convergence,
     gone_job_check,
@@ -22,6 +21,7 @@ from automagician.process_job import (
     process_opt,
     process_unconverged,
 )
+from automagician.update_job import classify_job_dir
 
 
 def test_check_has_opt_no_files(tmp_path):
