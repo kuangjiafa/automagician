@@ -8,6 +8,7 @@ import pytest
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, SSHConfig
 from automagician.database import Database
 from automagician.machine import get_subfile
+from automagician.small_functions import classify_job_dir
 from automagician.process_job import (
     check_error,
     check_has_opt,
@@ -21,7 +22,6 @@ from automagician.process_job import (
     process_opt,
     process_unconverged,
 )
-from automagician.update_job import classify_job_dir
 
 
 def test_check_has_opt_no_files(tmp_path):

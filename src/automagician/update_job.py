@@ -2,36 +2,16 @@ import datetime
 import logging
 import os
 import re
-import shlex
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, Literal, Optional, TextIO
+from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
+import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
@@ -57,7 +37,9 @@ def log_error(job_directory: str, home: str) -> None:
       None
     Changes:
       Updates error_log.dat, creating it if it dosent exist, and writes the error message, and current time
-    """
+    Tests
+      TODO: Medium priority
+        Simple, something not critical"""
     with open(os.path.join(home, "error_log.dat"), "a+") as error_log:
         for error_message in get_error_message(job_directory):
             error_log.write(
@@ -102,7 +84,6 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
-            import automagician.finish_job as finish_job
             finish_job.wrap_up(job_directory)
             return True
         elif (
@@ -110,8 +91,8 @@ def fix_error(
                 in error_message
         ):
             cwd = os.getcwd()
+            os.chdir(job_directory)
             try:
-                os.chdir(job_directory)
                 subprocess.call(
                     [constants.SORT_POS_PATH],
                     stdout=subprocess.DEVNULL,
@@ -127,19 +108,6 @@ def fix_error(
             return True
     logger.info(f"a fix was not attempted for the job at {job_directory}")
     return False
-
-
-# if CG isn't working, use Damped molecular dynamics
-def optimizer_review(job_directory: str) -> None:
-    """Returns None
-     --- What I think it wants to do below ---
-    Goal seems to be to combine XDATCAR and FE
-
-    Changes INCAR by adjusting INBARIAR to the most correct option
-    """
-    logger = logging.getLogger()
-    logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
-    return None
 
 
 def update_job_name(subfile: str) -> None:
@@ -202,11 +170,6 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     write_incar.close()
 
 
-def get_opt_dir(job_dir: str) -> str:
-    """Replaces the dos sc and wav's that could be in a directory with nothing  to turn them into opt jobs"""
-    return re.compile(r"\/(dos|sc|wav)$").sub("", str(job_dir))
-
-
 def switch_subfile(
         job_dir: str,
         new_sub: str,
@@ -241,27 +204,6 @@ def switch_subfile(
         os.chdir(cwd)
 
 
-def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
-    """Returns the type of job this is based on the ending directory name.
-
-    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-    this would return "sc", and if it ended in /wav returns "wav".
-    Finally if it does not match any of the following returns "opt"
-    """
-    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
-    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
-    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
-
-    if is_dos_regex.match(str(os.path.normpath(job_dir))):
-        return "dos"
-    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
-        return "sc"
-    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
-        return "wav"
-    else:
-        return "opt"
-
-
 def set_status_for_newly_submitted_job(
         job_dir: str,
         job_machine: Machine,
@@ -278,9 +220,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
-    import automagician.process_job as process_job
-    job_type = process_job.classify_job_dir(job_dir)
-    opt_dir = get_opt_dir(job_dir)
+    job_type = small_functions.classify_job_dir(job_dir)
+    opt_dir = small_functions.get_opt_dir(job_dir)
 
     # for now, status -1 is for special jobs that no longer need optimization
     if job_type == "sc":

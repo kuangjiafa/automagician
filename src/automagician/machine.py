@@ -140,18 +140,23 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
 
     if machine < 2 and ssh_config.config != "NoSSH":
         # Check remote directory existence and ownership securely
-        # Assuming remote is Linux (stat -c %u)
+        # Use atomic check-and-create or verify ownership
+        quoted_lock_dir = shlex.quote(constants.LOCK_DIR)
         cmd = (
-            f'if [ ! -d "{constants.LOCK_DIR}" ]; then '
-            f'mkdir -p -m 700 "{constants.LOCK_DIR}"; '
+            f'if [ ! -d {quoted_lock_dir} ]; then '
+            f'mkdir -p -m 700 {quoted_lock_dir}; '
             f'else '
-            f'if [ "$(stat -c \'%u\' "{constants.LOCK_DIR}")" -ne "$(id -u)" ]; then '
+            f'if [ "$(stat -c %u {quoted_lock_dir})" -ne "$(id -u)" ]; then '
             f'echo "Remote lock directory owned by another user" >&2; exit 1; '
             f'fi; '
-            f'chmod 700 "{constants.LOCK_DIR}"; '
+            f'chmod 700 {quoted_lock_dir}; '
             f'fi'
         )
-        ssh_config.config.ssh.run(cmd)
+        if not ssh_config.config.ssh.run(cmd, warn=True, hide=True).ok:
+             logger.error(
+                f"Remote lock directory {constants.LOCK_DIR} issue (permissions or ownership)."
+            )
+             exit()
 
     if exists(constants.LOCK_FILE):
         logger.error(
@@ -185,7 +190,7 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
             f.write(lockstring)
         if machine < 2 and ssh_config.config != "NoSSH":
             ssh_config.config.ssh.run(
-                f"echo {shlex.quote(lockstring)} > {shlex.quote(constants.LOCK_FILE)}"
+                'echo ' + shlex.quote(lockstring) + ' > ' + shlex.quote(constants.LOCK_FILE)
             )
 
 
@@ -218,17 +223,19 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     """
     cwd = os.getcwd()
     os.chdir(local)
-    for f in (
-            subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                    .stdout.decode("utf-8")
-                    .split("\n")
-    ):
-        if len(f) < 1:
-            continue
-        dirname = os.path.dirname(remote + f[1:])
-        ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
-        ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
-    os.chdir(cwd)
+    try:
+        for f in (
+                subprocess.run(["find", ".", "-type", "f"], capture_output=True)
+                        .stdout.decode("utf-8")
+                        .split("\n")
+        ):
+            if len(f) < 1:
+                continue
+            dirname = os.path.dirname(remote + f[1:])
+            ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
+            ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
+    finally:
+        os.chdir(cwd)
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
