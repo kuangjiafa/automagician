@@ -38,7 +38,6 @@ class TestSecurityRepro(unittest.TestCase):
 
         # Malicious USER environment variable
         malicious_user = 'user"; touch /tmp/pwned; echo "'
-        
         # Patch constants.LOCK_FILE and constants.LOCK_DIR directly to avoid mutating global state
         # Also patch the USER environment variable and os.environ.get in the machine module
         malicious_lock_file = f"/tmp/automagician/{malicious_user}-lock"
