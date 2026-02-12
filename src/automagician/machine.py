@@ -86,6 +86,8 @@ def ssh_scp_init(
             except Exception:
                 logger.warning("you need fri-halifax keys for ssh to work")
                 return SSHConfig(config="NoSSH")
+    else:
+        return SSHConfig(config="NoSSH")
     return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
 
 
