@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code
+# pylint: disable=cyclic-import
 import logging
 import os
 import re
@@ -8,10 +10,7 @@ from os.path import exists
 from typing import Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
-import automagician.create_job as create_job
-import automagician.finish_job as finish_job
 import automagician.machine as machine_file
-import automagician.update_job as update_job
 from automagician.classes import (
     DosJob,
     GoneJob,
@@ -110,6 +109,8 @@ def process_opt(
     if is_running:
         logger.debug(f"job in {job_directory} is running, do nothing")
         step, force, energy = get_residueSFE(job_directory)
+        import automagician.update_job as update_job
+
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
         )
@@ -130,6 +131,8 @@ def process_opt(
     if check_error(job_directory):
         logger.warning(f"job in {job_directory} failed!")
         opt_jobs[job_directory].status = JobStatus.ERROR
+        import automagician.update_job as update_job
+
         update_job.log_error(job_directory, home_dir)
         error_fixed = update_job.fix_error(
             job_directory=job_directory,
@@ -303,6 +306,8 @@ def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
 
     logger = logging.getLogger()
     logger.debug(f"optimization converged! {job_directory}")
+    import automagician.finish_job as finish_job
+
     finish_job.give_certificate(job_directory)
     opt_jobs[
         job_directory
@@ -354,11 +359,17 @@ def process_unconverged(
         logger.debug("contcar or outcar is missing -> resubmit")
     elif os.path.getsize(contcar_path) != 0:
         logger.debug("contcar exists -> wrap up")
+        import automagician.finish_job as finish_job
+
         finish_job.wrap_up(job_directory)
         step, force, energy = get_residueSFE(job_directory)
+        import automagician.update_job as update_job
+
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
         )
+
+    import automagician.create_job as create_job
 
     create_job.add_to_sub_queue(
         job_directory=job_directory,
@@ -418,6 +429,8 @@ def process_dos(
 
     sc_dir = os.path.join(job_directory, "sc")
     if os.path.isdir(sc_dir):
+        import automagician.finish_job as finish_job
+
         if finish_job.sc_is_complete(sc_dir):
             dos_dir = os.path.join(job_directory, "dos")
             dos_jobs[job_directory].sc_status = JobStatus.CONVERGED
@@ -430,6 +443,8 @@ def process_dos(
                 elif check_error(dos_dir):
                     dos_jobs[job_directory].dos_status = JobStatus.ERROR
             else:
+                import automagician.create_job as create_job
+
                 create_job.create_dos_from_sc(
                     job_directory=job_directory,
                     continue_past_limit=continue_past_limit,
@@ -455,6 +470,8 @@ def process_dos(
 
     else:
         logger.debug("no sc_dir -> create_sc")
+        import automagician.create_job as create_job
+
         create_job.create_sc(
             job_directory=job_directory,
             continue_past_limit=continue_past_limit,
@@ -490,6 +507,8 @@ def process_wav(
 
     wav_dir = os.path.join(job_directory, "wav")
     if os.path.isdir(wav_dir):
+        import automagician.finish_job as finish_job
+
         if finish_job.wav_is_complete(wav_dir):
             # wav_jobs[job_directory].wav_status = 0
             wav_jobs[job_directory].wav_status = JobStatus.CONVERGED
@@ -500,6 +519,8 @@ def process_wav(
 
     else:
         logger.debug("no wav_dir -> create_wav")
+        import automagician.create_job as create_job
+
         if not create_job.create_wav(
                 job_directory=job_directory,
                 continue_past_limit=continue_past_limit,
@@ -564,6 +585,8 @@ def _get_submitted_jobs_slurm(
             job_status = JobStatus.RUNNING
 
         job_type = classify_job_dir(job_dir)
+        import automagician.update_job as update_job
+
         if job_type in ["dos", "sc"]:
             opt_dir = update_job.get_opt_dir(job_dir)
             if opt_dir not in dos_jobs:
@@ -813,6 +836,8 @@ def submit_queue(
         )
 
         sub_queue_index = 0
+        import automagician.update_job as update_job
+
         while sub_queue_index < num_to_sub_there:
             job_dir = sub_queue[sub_queue_index]
             update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
@@ -882,6 +907,8 @@ def submit_queue(
                         ["sbatch", machine_file.get_subfile(Machine(i + 2))]
                     )
                 else:
+                    import automagician.update_job as update_job
+
                     update_job.switch_subfile(
                         job_dir,
                         machine_file.get_subfile(Machine(i + 2)),
@@ -891,6 +918,8 @@ def submit_queue(
                     add_to_insta_submit(
                         job_dir, machine_file.get_machine_name(Machine(i + 2)), database
                     )
+                import automagician.update_job as update_job
+
                 update_job.set_status_for_newly_submitted_job(
                     job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
                 )

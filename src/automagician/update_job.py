@@ -1,3 +1,4 @@
+# pylint: disable=cyclic-import
 import datetime
 import logging
 import os
@@ -8,7 +9,6 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
@@ -96,6 +96,8 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
+
             finish_job.wrap_up(job_directory)
             return True
         elif (

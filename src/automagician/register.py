@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 import logging
 import os
 import re
