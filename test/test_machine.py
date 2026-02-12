@@ -54,13 +54,13 @@ def test_ssh_scp_init():
 
 
 def test_scp_put_dir_quotes_paths():
-    # Mock SSHConfig
-    # We create a mock that behaves like what scp_put_dir expects
-    mock_ssh_config = unittest.mock.Mock()
-    # ssh_config.ssh.run is called
-    mock_ssh_config.ssh.run = unittest.mock.Mock()
-    # ssh_config.scp.put is called
-    mock_ssh_config.scp.put = unittest.mock.Mock()
+    # Mock SSHConfig to match real object structure
+    # SSHConfig has a .config field which is either "NoSSH" or SshScp(ssh, scp)
+    mock_ssh_config = unittest.mock.Mock(spec=SSHConfig)
+    mock_ssh_scp = unittest.mock.Mock()
+    mock_ssh_scp.ssh = unittest.mock.Mock()
+    mock_ssh_scp.scp = unittest.mock.Mock()
+    mock_ssh_config.config = mock_ssh_scp
 
     # Create a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -94,7 +94,7 @@ def test_scp_put_dir_quotes_paths():
         expected_dirname = os.path.dirname(remote_base + f"/{malicious_name}/file.txt")
         expected_cmd = "mkdir -p " + shlex.quote(expected_dirname)
 
-        for call in mock_ssh_config.ssh.run.call_args_list:
+        for call in mock_ssh_config.config.ssh.run.call_args_list:
             args, _ = call
             cmd = args[0]
             if "mkdir -p" in cmd:
@@ -103,4 +103,4 @@ def test_scp_put_dir_quotes_paths():
                     found_mkdir = True
                     break
 
-        assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.ssh.run.call_args_list}"
+        assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.config.ssh.run.call_args_list}"
