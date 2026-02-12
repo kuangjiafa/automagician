@@ -468,7 +468,7 @@ def test_get_submitted_job_in_dictionary(monkeypatch):
 
 
 @patch("automagician.process_job.subprocess")
-def test_get_submitted_jobs_tacc_dos_queue_accounting(monkeypatch):
+def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
     """Test DOS queue accounting on TACC machines uses dos_last_on field.
     
     This test verifies:
@@ -477,8 +477,8 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(monkeypatch):
     3. No KeyError occurs when opt_jobs lacks the DOS job entry
     """
     # Mock subprocess to return empty squeue output (no jobs in queue)
-    monkeypatch.check_output = MagicMock(return_value="")
-    monkeypatch.call = MagicMock(return_value="")
+    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.call = MagicMock(return_value="")
     
     # Setup: DOS job on STAMPEDE2 (machine 2) without a matching opt_job
     dos_job_dir = "/home/test_user/test_job/dos"
@@ -512,11 +512,11 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(monkeypatch):
 
 
 @patch("automagician.process_job.subprocess")
-def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(monkeypatch):
+def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     """Test DOS queue accounting on TACC with both SC and DOS running."""
     # Mock subprocess to return empty squeue output
-    monkeypatch.check_output = MagicMock(return_value="")
-    monkeypatch.call = MagicMock(return_value="")
+    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.call = MagicMock(return_value="")
     
     dos_job_dir = "/home/test_user/test_job/dos"
     dos_jobs = {
