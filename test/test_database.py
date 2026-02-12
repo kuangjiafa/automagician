@@ -3,6 +3,8 @@ import os
 import pytest
 
 import automagician.classes
+from typing import List
+
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 from automagician.database import Database
 
@@ -1374,7 +1376,7 @@ def test_reset_job_status(tmp_path):
     }
 
 
-def check_db_tables(names: list[str]):
+def check_db_tables(names: List[str]):
     tables = 0
     for name in names:
         trimmed_name = name[0]
