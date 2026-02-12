@@ -1,7 +1,6 @@
 import logging
 import os
 import re
-import shlex
 import shutil
 import subprocess
 import traceback
@@ -9,10 +8,7 @@ from os.path import exists
 from typing import Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
-import automagician.create_job as create_job
-import automagician.finish_job as finish_job
 import automagician.machine as machine_file
-import automagician.update_job as update_job
 from automagician.classes import (
     DosJob,
     GoneJob,
@@ -36,7 +32,7 @@ try:
             local: the directory on the local machine to transfer files to
         """
         for f in ssh_scp.ssh.run(
-                "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
+                "cd " + remote + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
@@ -125,6 +121,8 @@ def process_opt(
         return
 
     if is_running:
+        import automagician.update_job as update_job
+
         logger.debug(f"job in {job_directory} is running, do nothing")
         step, force, energy = get_residueSFE(job_directory)
         update_job.add_preliminary_results(
@@ -145,6 +143,8 @@ def process_opt(
         return
     error_fixed = False
     if check_error(job_directory):
+        import automagician.update_job as update_job
+
         logger.warning(f"job in {job_directory} failed!")
         opt_jobs[job_directory].status = JobStatus.ERROR
         update_job.log_error(job_directory, home_dir)
@@ -307,6 +307,7 @@ def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
             optomization job.
         opt_jobs: A collection of every optomization job
     """
+    import automagician.finish_job as finish_job
 
     logger = logging.getLogger()
     logger.debug(f"optimization converged! {job_directory}")
@@ -360,12 +361,17 @@ def process_unconverged(
     if not os.path.exists(contcar_path) or not os.path.exists(outcar_path):
         logger.debug("contcar or outcar is missing -> resubmit")
     elif os.path.getsize(contcar_path) != 0:
+        import automagician.finish_job as finish_job
+        import automagician.update_job as update_job
+
         logger.debug("contcar exists -> wrap up")
         finish_job.wrap_up(job_directory)
         step, force, energy = get_residueSFE(job_directory)
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
         )
+
+    import automagician.create_job as create_job
 
     create_job.add_to_sub_queue(
         job_directory=job_directory,
@@ -425,6 +431,9 @@ def process_dos(
 
     sc_dir = os.path.join(job_directory, "sc")
     if os.path.isdir(sc_dir):
+        import automagician.create_job as create_job
+        import automagician.finish_job as finish_job
+
         if finish_job.sc_is_complete(sc_dir):
             dos_dir = os.path.join(job_directory, "dos")
             dos_jobs[job_directory].sc_status = JobStatus.CONVERGED
@@ -461,6 +470,8 @@ def process_dos(
             dos_jobs[job_directory].dos_status = JobStatus.INCOMPLETE
 
     else:
+        import automagician.create_job as create_job
+
         logger.debug("no sc_dir -> create_sc")
         create_job.create_sc(
             job_directory=job_directory,
@@ -497,6 +508,8 @@ def process_wav(
 
     wav_dir = os.path.join(job_directory, "wav")
     if os.path.isdir(wav_dir):
+        import automagician.finish_job as finish_job
+
         if finish_job.wav_is_complete(wav_dir):
             # wav_jobs[job_directory].wav_status = 0
             wav_jobs[job_directory].wav_status = JobStatus.CONVERGED
@@ -506,6 +519,8 @@ def process_wav(
             wav_jobs[job_directory].wav_status = JobStatus.ERROR
 
     else:
+        import automagician.create_job as create_job
+
         logger.debug("no wav_dir -> create_wav")
         if not create_job.create_wav(
                 job_directory=job_directory,
@@ -572,6 +587,8 @@ def _get_submitted_jobs_slurm(
 
         job_type = classify_job_dir(job_dir)
         if job_type in ["dos", "sc"]:
+            import automagician.update_job as update_job
+
             opt_dir = update_job.get_opt_dir(job_dir)
             if opt_dir not in dos_jobs:
                 dos_jobs[opt_dir] = DosJob(
@@ -589,6 +606,8 @@ def _get_submitted_jobs_slurm(
                 dos_jobs[opt_dir].sc_status = job_status
                 dos_jobs[opt_dir].sc_last_on = machine
         elif job_type == "wav":
+            import automagician.update_job as update_job
+
             opt_dir = update_job.get_opt_dir(job_dir)
             if opt_dir not in wav_jobs:
                 wav_jobs[opt_dir] = WavJob(
@@ -821,17 +840,21 @@ def submit_queue(
 
         sub_queue_index = 0
         while sub_queue_index < num_to_sub_there:
+            import automagician.update_job as update_job
+
             job_dir = sub_queue[sub_queue_index]
             update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
             new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
             machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
+            ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
             update_job.set_status_for_newly_submitted_job(
                 job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
             )
             sub_queue_index = sub_queue_index + 1
 
         while sub_queue_index < num_to_sub:
+            import automagician.update_job as update_job
+
             job_dir = sub_queue[sub_queue_index]
             os.chdir(job_dir)
             sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
@@ -882,6 +905,8 @@ def submit_queue(
         sub_queue_index = 0
         for i in range(0, 3):
             for _ in range(0, num_will_sub[i]):
+                import automagician.update_job as update_job
+
                 job_dir = sub_queue[sub_queue_index]
                 os.chdir(job_dir)
                 if i + 2 == machine:

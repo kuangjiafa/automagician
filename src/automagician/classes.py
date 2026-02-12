@@ -3,8 +3,7 @@ from enum import IntEnum
 from typing import Literal
 
 try:
-    from fabric import Connection
-    from fabric.transfer import Transfer
+    from fabric import Connection, Transfer
 
 
     @dataclass

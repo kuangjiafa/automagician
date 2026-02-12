@@ -179,10 +179,11 @@ class Database:
             dos_jobs: A collection of every dos_job known.
             wav_jobs: A collection of every wav_job known.
         """
-        import automagician.update_job as update_job
         logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
+
+        import automagician.update_job as update_job
 
         for job_dir in dos_jobs:
             opt_dir = update_job.get_opt_dir(job_dir)
