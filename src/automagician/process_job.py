@@ -226,8 +226,12 @@ def determine_convergence(job_directory: str) -> bool:
     logger.debug("running vef.pl")
     cwd = os.getcwd()
     os.chdir(job_directory)
-    subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    os.chdir(cwd)
+    try:
+        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    except FileNotFoundError:
+        logger.warning("vef.pl not found, skipping")
+    finally:
+        os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
         return False
     if is_isif3(job_directory):
@@ -247,8 +251,12 @@ def determine_box_convergence(job_directory: str) -> bool:
     logger.debug(f"determining box convergence for {job_directory}")
     fedatname = os.path.join(job_directory, "fe.dat")
     line_number = 0
-    with open(fedatname, "r") as fedat:
-        line_number = len(fedat.readlines())
+    try:
+        with open(fedatname, "r") as fedat:
+            line_number = len(fedat.readlines())
+    except FileNotFoundError:
+        logger.warning(f"fe.dat not found in {job_directory}")
+        return False
     if line_number == 0:
         logger.warning(f"The calculation in {job_directory} needs attention")
         return False
@@ -285,15 +293,17 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     Returns:
       bool: True iff the energy minimization was stopped due to required accuracy being met
       False otherwise"""
-    grep_retcode = subprocess.call(
-        [
-            "grep",
-            "reached required accuracy - stopping structural energy minimisation",
-            ll_out,
-        ],
-        stdout=subprocess.DEVNULL,
-    )
-    return grep_retcode == 0
+    try:
+        with open(ll_out, "r") as f:
+            for line in f:
+                if (
+                    "reached required accuracy - stopping structural energy minimisation"
+                    in line
+                ):
+                    return True
+        return False
+    except FileNotFoundError:
+        return False
 
 
 def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:

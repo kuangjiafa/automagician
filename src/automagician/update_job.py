@@ -121,18 +121,23 @@ def fix_error(
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
-            subprocess.call(
-                [constants.SORT_POS_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            subprocess.call(
-                [constants.SO_GET_SOFT_PBE_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            os.chdir(cwd)
-            return True
+            try:
+                subprocess.call(
+                    [constants.SORT_POS_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+                subprocess.call(
+                    [constants.SO_GET_SOFT_PBE_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+                return True
+            except FileNotFoundError:
+                logger.warning("Fix scripts not found")
+                return False
+            finally:
+                os.chdir(cwd)
     logger.info(f"a fix was not attempted for the job at {job_directory}")
     return False
 
