@@ -4,6 +4,7 @@ import logging
 import unittest.mock
 import tempfile
 import shlex
+import pytest
 
 def test_is_oden():
     assert is_oden(Machine.FRI)
@@ -104,3 +105,23 @@ def test_scp_put_dir_quotes_paths():
                     break
 
         assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.config.ssh.run.call_args_list}"
+
+
+def test_scp_put_dir_raises_on_nossh():
+    """Test that scp_put_dir raises ValueError when ssh_config.config is 'NoSSH'"""
+    # Create a mock SSHConfig with config set to "NoSSH"
+    mock_ssh_config = unittest.mock.Mock(spec=SSHConfig)
+    mock_ssh_config.config = "NoSSH"
+    
+    # Create a temporary directory to use as local path
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a simple file so the directory is not empty
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("test content")
+        
+        # Verify that calling scp_put_dir with NoSSH config raises ValueError
+        with pytest.raises(
+            ValueError, match="SSH configuration is required for scp_put_dir"
+        ):
+            scp_put_dir(temp_dir, "remote_dir", mock_ssh_config)
