@@ -30,7 +30,7 @@ class Database:
         has_gone = False
         has_insta_submit = False
         for table in self.db.execute(
-                "select name from sqlite_master where type='table'"
+            "select name from sqlite_master where type='table'"
         ):
             if table[0] == "opt_jobs":
                 has_opt = True
@@ -166,10 +166,10 @@ class Database:
         return gone_jobs
 
     def write_job_statuses(
-            self,
-            opt_jobs: Dict[str, OptJob],
-            dos_jobs: Dict[str, DosJob],
-            wav_jobs: Dict[str, WavJob],
+        self,
+        opt_jobs: Dict[str, OptJob],
+        dos_jobs: Dict[str, DosJob],
+        wav_jobs: Dict[str, WavJob],
     ) -> None:
         """Updates the database to include the jobs in opt_jobs, dos_jobs, and wav_jobs
 
@@ -208,7 +208,7 @@ class Database:
         logger.info("automagician.db updated")
 
     def add_opt_job_to_db(
-            self, job_to_add: OptJob, opt_dir: str, commit: bool = True
+        self, job_to_add: OptJob, opt_dir: str, commit: bool = True
     ) -> None:
         """Adds (or updates) a opt_job in the database.
 
@@ -250,11 +250,11 @@ class Database:
             self.db.connection.commit()
 
     def add_dos_job_to_db(
-            self,
-            job_to_add: DosJob,
-            opt_dir: Optional[str] = None,
-            commit: bool = True,
-            add_opt_id: bool = True,
+        self,
+        job_to_add: DosJob,
+        opt_dir: Optional[str] = None,
+        commit: bool = True,
+        add_opt_id: bool = True,
     ) -> None:
         """Adds (or updates) a dos_job in the database.
 
@@ -321,11 +321,11 @@ class Database:
             self.db.connection.commit()
 
     def add_wav_job_to_db(
-            self,
-            job_to_add: WavJob,
-            opt_dir: Optional[str] = None,
-            commit: bool = True,
-            add_opt_id: bool = True,
+        self,
+        job_to_add: WavJob,
+        opt_dir: Optional[str] = None,
+        commit: bool = True,
+        add_opt_id: bool = True,
     ) -> None:
         """Adds (or updates) a wav_job in the database.
 
