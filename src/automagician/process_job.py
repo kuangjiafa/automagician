@@ -264,7 +264,7 @@ def is_isif3(job_directory: str) -> bool:
     """
     with open(os.path.join(job_directory, "INCAR"), "r") as f:
         for line in f:
-            if ISIF3_REGEX.match(line):
+            if ISIF3_REGEX.search(line):
                 return True
     return False
 
@@ -664,12 +664,12 @@ def get_submitted_jobs(
                 if dos_jobs[job_dir].dos_last_on == machine:
                     dos_jobs[job_dir].dos_status = JobStatus.INCOMPLETE
         for job_dir in wav_jobs:
-            if wav_jobs[job_dir].wav_status == JobStatus.INCOMPLETE:
+            if wav_jobs[job_dir].wav_status == JobStatus.RUNNING:
                 tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] = (
                     tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] + 1
                 )
                 if wav_jobs[job_dir].wav_last_on == machine:
-                    wav_jobs[job_dir].wav_status = JobStatus.RUNNING
+                    wav_jobs[job_dir].wav_status = JobStatus.INCOMPLETE
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
 
 
@@ -764,7 +764,7 @@ def submit_queue(
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
     database: Database,
-    limit: bool,
+    limit: int,
 ) -> None:
     """Submits the jobs to the queue of the machine
 
