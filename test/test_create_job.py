@@ -242,15 +242,19 @@ def test_create_sc_potcar(tmp_path):
     assert sub_quene == expected_sub_quene
 
 
-def test_copy_inputs_full(tmp_path):
+def setup_copy_inputs_test(tmp_path, subfile):
     job_dir = tmp_path / "job"
     job_dir.mkdir()
     dest_dir = tmp_path / "dest"
-
-    subfile = "test.sub"
     (job_dir / subfile).write_text("sub")
     (job_dir / "KPOINTS").write_text("kpoints")
     (job_dir / "POTCAR").write_text("potcar")
+    return job_dir, dest_dir
+
+
+def test_copy_inputs_full(tmp_path):
+    subfile = "test.sub"
+    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
     (job_dir / "INCAR").write_text("incar")
     (job_dir / "CHGCAR").write_text("chgcar")
     (job_dir / "CONTCAR").write_text("contcar")
@@ -269,14 +273,8 @@ def test_copy_inputs_full(tmp_path):
 
 
 def test_copy_inputs_minimal(tmp_path):
-    job_dir = tmp_path / "job"
-    job_dir.mkdir()
-    dest_dir = tmp_path / "dest"
-
     subfile = "test.sub"
-    (job_dir / subfile).write_text("sub")
-    (job_dir / "KPOINTS").write_text("kpoints")
-    (job_dir / "POTCAR").write_text("potcar")
+    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
     (job_dir / "INCAR").write_text("incar")
     (job_dir / "POSCAR").write_text("poscar")
 
@@ -292,14 +290,8 @@ def test_copy_inputs_minimal(tmp_path):
 
 
 def test_copy_inputs_missing_mandatory(tmp_path):
-    job_dir = tmp_path / "job"
-    job_dir.mkdir()
-    dest_dir = tmp_path / "dest"
-
     subfile = "test.sub"
-    (job_dir / subfile).write_text("sub")
-    (job_dir / "KPOINTS").write_text("kpoints")
-    (job_dir / "POTCAR").write_text("potcar")
+    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
     # INCAR is missing
 
     with pytest.raises(FileNotFoundError):
