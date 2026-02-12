@@ -21,7 +21,7 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-from automagician.database import Database
+import automagician.database
 
 try:
     from automagician.classes import SshScp
@@ -186,11 +186,18 @@ def check_error(job_directory: str) -> bool:
       True iff ll_out shows an error, false otherwise"""
     logger = logging.getLogger()
     lloutpath = os.path.join(job_directory, "ll_out")
-    grepout = subprocess.call(
-        ["grep", r"I\ REFUSE\ TO\ CONTINUE\ WITH\ THIS\ SICK\ JOB", lloutpath]
-    )
 
-    if grepout == 0:
+    error_found = False
+    try:
+        with open(lloutpath, "r", errors="ignore") as f:
+            for line in f:
+                if "I REFUSE TO CONTINUE WITH THIS SICK JOB" in line:
+                    error_found = True
+                    break
+    except EnvironmentError:
+        return False
+
+    if error_found:
         logger.warning(f"The job in {job_directory} reported an error!")
         return True
     else:
@@ -285,15 +292,17 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     Returns:
       bool: True iff the energy minimization was stopped due to required accuracy being met
       False otherwise"""
-    grep_retcode = subprocess.call(
-        [
-            "grep",
-            "reached required accuracy - stopping structural energy minimisation",
-            ll_out,
-        ],
-        stdout=subprocess.DEVNULL,
-    )
-    return grep_retcode == 0
+    try:
+        with open(ll_out, "r", errors="ignore") as f:
+            for line in f:
+                if (
+                        "reached required accuracy - stopping structural energy minimisation"
+                        in line
+                ):
+                    return True
+    except EnvironmentError:
+        return False
+    return False
 
 
 def process_converged(job_directory: str, opt_jobs: Dict[str, OptJob]) -> None:
@@ -703,7 +712,7 @@ def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
 
 
 def gone_job_check(
-        database: Database,
+        database: "automagician.database.Database",
         opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -771,7 +780,7 @@ def submit_queue(
         opt_jobs: Dict[str, OptJob],
         dos_jobs: Dict[str, DosJob],
         wav_jobs: Dict[str, WavJob],
-        database: Database,
+        database: "automagician.database.Database",
         limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -904,7 +913,9 @@ def submit_queue(
     os.chdir(cwd)
 
 
-def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
+def add_to_insta_submit(
+        job_dir: str, machine: str, database: "automagician.database.Database"
+) -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB
