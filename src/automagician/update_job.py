@@ -8,13 +8,10 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
     from automagician.classes import SshScp
-
 
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
@@ -24,7 +21,7 @@ try:
         local (str): the directory on the local machine to transfer files to
         """
         for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
+            "cd " + remote + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
@@ -35,11 +32,11 @@ except ImportError:
 
 
 def add_preliminary_results(
-        job_directory: str,
-        step: int,
-        force: float,
-        energy: float,
-        preliminary_results: TextIO,
+    job_directory: str,
+    step: int,
+    force: float,
+    energy: float,
+    preliminary_results: TextIO,
 ) -> None:
     """Adds the job directory, step number, force, and energy to the file in preliminary_results"""
     preliminary_results.write(str(job_directory) + "\n")
@@ -96,7 +93,7 @@ def get_error_message(job_directory: str) -> list[str]:
 
 
 def fix_error(
-        job_directory: str,
+    job_directory: str,
 ) -> bool:
     """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
     Args:
@@ -113,11 +110,13 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
+
             finish_job.wrap_up(job_directory)
             return True
         elif (
-                "number of potentials on File POTCAR incompatible with number"
-                in error_message
+            "number of potentials on File POTCAR incompatible with number"
+            in error_message
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
@@ -162,9 +161,7 @@ def update_job_name(subfile: str) -> None:
         cwd_str = os.getcwd().replace("/", "_")
         for line in script_lines:
             if "-J" in line or "--job-name=" in line:
-                script.write(
-                    "#SBATCH -J " + "AM_" + cwd_str + "\n"
-                )
+                script.write("#SBATCH -J " + "AM_" + cwd_str + "\n")
             else:
                 script.write(line)
 
@@ -217,10 +214,10 @@ def get_opt_dir(job_dir: str) -> str:
 
 
 def switch_subfile(
-        job_dir: str,
-        new_sub: str,
-        subfile: str,
-        machine: Machine,
+    job_dir: str,
+    new_sub: str,
+    subfile: str,
+    machine: Machine,
 ) -> None:
     """Copies the subfile into new_sub and updates the job_name of new_sub
 
@@ -247,12 +244,12 @@ def switch_subfile(
 
 
 def set_status_for_newly_submitted_job(
-        job_dir: str,
-        job_machine: Machine,
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        opt_jobs: Dict[str, OptJob],
-        error: bool,
+    job_dir: str,
+    job_machine: Machine,
+    dos_jobs: Dict[str, DosJob],
+    wav_jobs: Dict[str, WavJob],
+    opt_jobs: Dict[str, OptJob],
+    error: bool,
 ) -> None:
     """Sets the job status to that of special jobs that no longer need to be optoomised
 
@@ -262,6 +259,7 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 

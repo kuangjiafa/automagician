@@ -9,18 +9,18 @@ from automagician.classes import DosJob, JobStatus, Machine, OptJob, SSHConfig, 
 
 
 def register(
-        opt_jobs: Dict[str, OptJob],
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        machine: Machine,
-        clear_certificate: bool,
-        home_dir: str,
-        ssh_config: SSHConfig,
-        preliminary_results: TextIO,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        hit_limit: bool,
+    opt_jobs: Dict[str, OptJob],
+    dos_jobs: Dict[str, DosJob],
+    wav_jobs: Dict[str, WavJob],
+    machine: Machine,
+    clear_certificate: bool,
+    home_dir: str,
+    ssh_config: SSHConfig,
+    preliminary_results: TextIO,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    hit_limit: bool,
 ) -> None:
     """Adds jobs to opt_jobs, dos_jobs, and wav_jobs, and their associated queues.
 
@@ -79,9 +79,9 @@ def register(
 
         dirs_lowercase = {item.lower() for item in subdirs}
         if (
-                ("band" in dirs_lowercase)
-                and ("ini" in dirs_lowercase)
-                and ("fin" in dirs_lowercase)
+            ("band" in dirs_lowercase)
+            and ("ini" in dirs_lowercase)
+            and ("fin" in dirs_lowercase)
         ):
             logger.debug("Found a NEB job bundle")
             NEB_paths_arr.append(job_dir)
@@ -127,21 +127,21 @@ def exclude_regex(job_dir: str) -> bool:
 
 
 def process_queue(
-        opt_queue: List[str],
-        dos_queue: List[str],
-        wav_queue: List[str],
-        machine: Machine,
-        opt_jobs: Dict[str, OptJob],
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        clear_certificate: bool,
-        home_dir: str,
-        ssh_config: SSHConfig,
-        preliminary_results: TextIO,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        hit_limit: bool,
+    opt_queue: List[str],
+    dos_queue: List[str],
+    wav_queue: List[str],
+    machine: Machine,
+    opt_jobs: Dict[str, OptJob],
+    dos_jobs: Dict[str, DosJob],
+    wav_jobs: Dict[str, WavJob],
+    clear_certificate: bool,
+    home_dir: str,
+    ssh_config: SSHConfig,
+    preliminary_results: TextIO,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    hit_limit: bool,
 ) -> None:
     """Processes the jobs in each of the quenes, updates opt jobs if the job was no longer found in the correct directory
 
