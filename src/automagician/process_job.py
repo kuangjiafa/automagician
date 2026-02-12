@@ -11,6 +11,7 @@ import automagician.constants as constants
 import automagician.create_job as create_job
 import automagician.finish_job as finish_job
 import automagician.machine as machine_file
+import automagician.small_functions as small_functions
 import automagician.update_job as update_job
 from automagician.classes import (
     DosJob,
@@ -21,28 +22,8 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-import automagician.database
+from automagician.database import Database
 
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def process_opt(
@@ -92,7 +73,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                scp_get_dir(
+                small_functions.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -189,7 +170,7 @@ def check_error(job_directory: str) -> bool:
 
     error_found = False
     try:
-        with open(lloutpath, "r", encoding="utf-8", errors="ignore") as f:
+        with open(lloutpath, "r", errors="ignore") as f:
             for line in f:
                 if "I REFUSE TO CONTINUE WITH THIS SICK JOB" in line:
                     error_found = True
@@ -578,9 +559,9 @@ def _get_submitted_jobs_slurm(
         else:
             job_status = JobStatus.RUNNING
 
-        job_type = classify_job_dir(job_dir)
+        job_type = small_functions.classify_job_dir(job_dir)
         if job_type in ["dos", "sc"]:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in dos_jobs:
                 dos_jobs[opt_dir] = DosJob(
                     opt_id=-1,
@@ -597,7 +578,7 @@ def _get_submitted_jobs_slurm(
                 dos_jobs[opt_dir].sc_status = job_status
                 dos_jobs[opt_dir].sc_last_on = machine
         elif job_type == "wav":
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in wav_jobs:
                 wav_jobs[opt_dir] = WavJob(
                     opt_id=-1, wav_status=job_status, wav_last_on=machine
@@ -690,29 +671,8 @@ def get_submitted_jobs(
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
 
 
-def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
-    """Returns the type of job this is based on the ending directory name.
-
-    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-    this would return "sc", and if it ended in /wav returns "wav".
-    Finally if it does not match any of the following returns "opt"
-    """
-    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
-    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
-    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
-
-    if is_dos_regex.match(str(os.path.normpath(job_dir))):
-        return "dos"
-    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
-        return "sc"
-    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
-        return "wav"
-    else:
-        return "opt"
-
-
 def gone_job_check(
-        database: "automagician.database.Database",
+        database: Database,
         opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -780,7 +740,7 @@ def submit_queue(
         opt_jobs: Dict[str, OptJob],
         dos_jobs: Dict[str, DosJob],
         wav_jobs: Dict[str, WavJob],
-        database: "automagician.database.Database",
+        database: Database,
         limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -913,9 +873,7 @@ def submit_queue(
     os.chdir(cwd)
 
 
-def add_to_insta_submit(
-        job_dir: str, machine: str, database: "automagician.database.Database"
-) -> None:
+def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB
