@@ -42,11 +42,16 @@ class TestSecurityRepro(unittest.TestCase):
 
         # Malicious USER environment variable
         malicious_user = 'user"; touch /tmp/pwned; echo "'
+        # Patch constants.LOCK_FILE and constants.LOCK_DIR directly to avoid mutating global state
+        # Also patch the USER environment variable and os.environ.get in the machine module
         malicious_lock_file = f"/tmp/automagician/{malicious_user}-lock"
-
-        with patch.dict(os.environ, {"USER": malicious_user}):
-            with patch("automagician.constants.LOCK_FILE", malicious_lock_file):
-                write_lockfile(ssh_config, Machine.FRI)
+        with patch('automagician.constants.LOCK_FILE', malicious_lock_file), \
+             patch('automagician.constants.LOCK_DIR', '/tmp/automagician'), \
+             patch('automagician.machine.constants.LOCK_FILE', malicious_lock_file), \
+             patch('automagician.machine.constants.LOCK_DIR', '/tmp/automagician'), \
+             patch.dict(os.environ, {'USER': malicious_user}):
+            
+            write_lockfile(ssh_config, Machine.FRI)
 
             # Check the command passed to ssh.run
             all_cmds = [call[0][0] for call in mock_ssh.run.call_args_list]
