@@ -189,7 +189,7 @@ def check_error(job_directory: str) -> bool:
 
     error_found = False
     try:
-        with open(lloutpath, "r", errors="ignore") as f:
+        with open(lloutpath, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
                 if "I REFUSE TO CONTINUE WITH THIS SICK JOB" in line:
                     error_found = True
