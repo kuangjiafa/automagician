@@ -6,6 +6,7 @@ import pytest
 from automagician.classes import JobLimitError
 from automagician.create_job import (
     add_to_sub_queue,
+    copy_inputs,
     create_dos_from_sc,
     create_sc,
     create_wav,
@@ -239,6 +240,70 @@ def test_create_sc_potcar(tmp_path):
     assert "NSW=0" in incar_text
     expected_sub_quene = [sc_job_path]
     assert sub_quene == expected_sub_quene
+
+
+def test_copy_inputs_full(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    dest_dir = tmp_path / "dest"
+
+    subfile = "test.sub"
+    (job_dir / subfile).write_text("sub")
+    (job_dir / "KPOINTS").write_text("kpoints")
+    (job_dir / "POTCAR").write_text("potcar")
+    (job_dir / "INCAR").write_text("incar")
+    (job_dir / "CHGCAR").write_text("chgcar")
+    (job_dir / "CONTCAR").write_text("contcar")
+    (job_dir / "POSCAR").write_text("poscar")
+
+    copy_inputs(subfile, str(job_dir), str(dest_dir))
+
+    assert (dest_dir / subfile).exists()
+    assert (dest_dir / "KPOINTS").exists()
+    assert (dest_dir / "POTCAR").exists()
+    assert (dest_dir / "INCAR").exists()
+    assert (dest_dir / "CHGCAR").exists()
+    assert (dest_dir / "CONTCAR").exists()
+    # If CONTCAR exists, POSCAR should NOT be copied
+    assert not (dest_dir / "POSCAR").exists()
+
+
+def test_copy_inputs_minimal(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    dest_dir = tmp_path / "dest"
+
+    subfile = "test.sub"
+    (job_dir / subfile).write_text("sub")
+    (job_dir / "KPOINTS").write_text("kpoints")
+    (job_dir / "POTCAR").write_text("potcar")
+    (job_dir / "INCAR").write_text("incar")
+    (job_dir / "POSCAR").write_text("poscar")
+
+    copy_inputs(subfile, str(job_dir), str(dest_dir))
+
+    assert (dest_dir / subfile).exists()
+    assert (dest_dir / "KPOINTS").exists()
+    assert (dest_dir / "POTCAR").exists()
+    assert (dest_dir / "INCAR").exists()
+    assert (dest_dir / "POSCAR").exists()
+    assert not (dest_dir / "CHGCAR").exists()
+    assert not (dest_dir / "CONTCAR").exists()
+
+
+def test_copy_inputs_missing_mandatory(tmp_path):
+    job_dir = tmp_path / "job"
+    job_dir.mkdir()
+    dest_dir = tmp_path / "dest"
+
+    subfile = "test.sub"
+    (job_dir / subfile).write_text("sub")
+    (job_dir / "KPOINTS").write_text("kpoints")
+    (job_dir / "POTCAR").write_text("potcar")
+    # INCAR is missing
+
+    with pytest.raises(FileNotFoundError):
+        copy_inputs(subfile, str(job_dir), str(dest_dir))
 
 
 def test_create_sc_contcar(tmp_path):
