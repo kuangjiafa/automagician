@@ -9,7 +9,6 @@ from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
@@ -266,6 +265,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
+
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
