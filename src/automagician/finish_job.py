@@ -5,7 +5,6 @@ import subprocess
 import time
 
 import automagician.constants as constants
-import automagician.update_job as update_job
 
 
 def wrap_up(job_directory: str) -> None:
@@ -27,42 +26,41 @@ def wrap_up(job_directory: str) -> None:
     logger.info("wrapping up job")
     # first find name
     cwd = os.getcwd()
-    try:
-        os.chdir(job_directory)
-        directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
-        runs = [f for f in directories if "run" in f]
-        # if no runs, wrap up into run0
-        if len(runs) == 0:
-            subprocess.run(
-                [constants.V_FIN_PL_PATH, "run0"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            shutil.move(
-                os.path.join(job_directory, "ll_out"), os.path.join(job_directory, "run0")
-            )
-        else:
-            # find the largest run
-            largest_number = 0
-            for run in runs:
-                try:
-                    number = int(run.partition("run")[2])
-                    if number >= largest_number:
-                        largest_number = number + 1
-                except Exception:
-                    continue
+    os.chdir(job_directory)
+    directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
+    runs = [f for f in directories if "run" in f]
+    # if no runs, wrap up into run0
+    if len(runs) == 0:
+        subprocess.run(
+            [constants.V_FIN_PL_PATH, "run0"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+        shutil.move(
+            os.path.join(job_directory, "ll_out"), os.path.join(job_directory, "run0")
+        )
+    else:
+        # find the largest run
+        largest_number = 0
+        for run in runs:
+            try:
+                number = int(run.partition("run")[2])
+                if number >= largest_number:
+                    largest_number = number + 1
+            except Exception:
+                continue
 
-            largest_run = f"run{largest_number}"
-            subprocess.run(
-                [constants.V_FIN_PL_PATH, largest_run],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            shutil.move("ll_out", largest_run)
-            logger.warning("combine_XDAT_FE disabled due to bugs")
-        update_job.optimizer_review(job_directory)
-    finally:
-        os.chdir(cwd)
+        largest_run = f"run{largest_number}"
+        subprocess.run(
+            [constants.V_FIN_PL_PATH, largest_run],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.STDOUT,
+        )
+        shutil.move("ll_out", largest_run)
+        logger.warning("combine_XDAT_FE disabled due to bugs")
+    import automagician.update_job as update_job
+    update_job.optimizer_review(job_directory)
+    os.chdir(cwd)
 
 
 def give_certificate(job_directory: str) -> int:

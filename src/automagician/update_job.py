@@ -9,8 +9,6 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 try:
@@ -103,6 +101,7 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
             finish_job.wrap_up(job_directory)
             return True
         elif (
@@ -257,6 +256,7 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
