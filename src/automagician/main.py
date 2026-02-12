@@ -274,7 +274,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
                     "select dir from opt_jobs where status = ?",
                     str(JobStatus.INCOMPLETE.value),
                 ):
-                    logger.info("inspecting recorded job: ", direc[0])
+                    logger.info(f"inspecting recorded job: {direc[0]}")
                     if args.db_debug_flag:
                         continue
                     else:

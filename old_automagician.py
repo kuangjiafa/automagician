@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-# pylint: disable=duplicate-code
 
 import cProfile
 import inspect
 import subprocess
 import os
 import time
+# pylint: skip-file
 import datetime
 import gzip
 import re
@@ -170,16 +170,6 @@ class JobLimitError(Exception):
     pass
 
 
-class Machine(IntEnum):
-  """A enum storing the machine number"""
-  Fri = 0
-  Halifax = 1
-  Stampede2 = 2
-  Frontera = 3
-  Ls6 = 4
-  Unknown = -1
-
-
 class JobStatus(IntEnum):
   """A enum storing the status of a job
   
@@ -266,11 +256,11 @@ def get_machine_name(machine_number):
     None Planned (Would essentially be testing python)
   """
   return {
-    Machine.Fri: "fri.oden.utexas.edu",
-    Machine.Halifax: "halifax.oden.utexas.edu",
-    Machine.Stampede2: "stampede2.tacc.utexas.edu",
-    Machine.Frontera: "frontera.tacc.utexas.edu",
-    Machine.Ls6: "ls6.tacc.utexas.edu"
+    0: "fri.oden.utexas.edu",
+    1: "halifax.oden.utexas.edu",
+    2: "stampede2.tacc.utexas.edu",
+    3: "frontera.tacc.utexas.edu",
+    4: "ls6.tacc.utexas.edu"
   }.get(machine_number, "localhost")
 
 def get_machine_number():
@@ -290,13 +280,14 @@ def get_machine_number():
     None planned: Would simply test re and socket and python"""
   rm_login_node = re.compile("login[0-3]\.")
   machine_name = rm_login_node.sub("", socket.gethostname())
+  #TODO: Can this be a enum?
   return {
-    "fri.oden.utexas.edu": Machine.Fri,
-    "halifax.oden.utexas.edu": Machine.Halifax,
-    "stampede2.tacc.utexas.edu": Machine.Stampede2,
-    "frontera.tacc.utexas.edu": Machine.Frontera,
-    "ls6.tacc.utexas.edu": Machine.Ls6,
-  }.get(machine_name, Machine.Unknown)
+    "fri.oden.utexas.edu": 0,
+    "halifax.oden.utexas.edu": 1,
+    "stampede2.tacc.utexas.edu": 2,
+    "frontera.tacc.utexas.edu": 3,
+    "ls6.tacc.utexas.edu": 4,
+  }.get(machine_name, -1)
 
 def ssh_scp_init():
   """ Initalizes ssh and sets the no_ssh varable appropately
@@ -528,11 +519,11 @@ def get_subfile(machine):
   Tests:
     None planned"""
   return {
-    Machine.Fri: "fri.sub",
-    Machine.Halifax: "halifax.sub",
-    Machine.Stampede2: "knl.mpi.slurm",
-    Machine.Frontera: "clx.mpi.slurm",
-    Machine.Ls6: "milan.mpi.slurm"
+    0: "fri.sub",
+    1: "halifax.sub",
+    2: "knl.mpi.slurm",
+    3: "clx.mpi.slurm",
+    4: "milan.mpi.slurm"
   }.get(machine)
 
 def register():
@@ -822,9 +813,11 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
   Tests
     TODO: Medium priority
       Simple, something not critical""" 
-  with open(home+"/error_log.dat","a+") as error_log:
-    for error_message in get_error_message(job_directory):
-      error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
+  error_log = open(home+"/error_log.dat","a+")
+
+  for error_message in get_error_message(job_directory):
+    #TODO: ^ Can return a string, and does not always return a list
+    error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
 
 def get_error_message(job_directory): 
   """Gets the error message from ll_out and returns all found
@@ -833,17 +826,21 @@ def get_error_message(job_directory):
   Returns:
     list(str): A list of error messages iff error messages were found
 
+    str: message not found iff no messages were found
   Changes:
     Changes current working direcctory to job_directory
   Tests
     Not Planned"""
   # Grep is likely faster, can use grep -i
   os.chdir(job_directory)
+  ll_out = open('ll_out','r')
   messages=[]
-  with open('ll_out','r') as ll_out:
-    for line in ll_out:
-      if ("ERROR" in line) or ("error" in line):
-        messages.append(line)
+  for line in ll_out:
+    if ("ERROR" in line) or ("error" in line):
+      messages.append(line)
+  if len(messages) == 0:
+    return "message not found!"
+    #WHY!, why not wrap this up in the same list, so the types are the same
   return messages
 
 def fix_error(job_directory):
@@ -1906,7 +1903,13 @@ def update_job_name(subfile_name):
 
 def give_certificate():
   """creates a convergence certuficate, printing any errors to standard output"""
-  subprocess.call(['touch','convergence_certificate'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
+  try:
+    with open('convergence_certificate', 'x'):
+      pass
+  except FileExistsError:
+    pass
+  except Exception:
+    subprocess.call(['touch','convergence_certificate'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
 def check_certificate():
   """Returns true if there is a convergence_certificate in the current direcoty

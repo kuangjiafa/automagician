@@ -3,6 +3,7 @@ import os
 import sqlite3
 from typing import Dict, Optional
 
+import automagician.small_functions as small_functions
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 
 
@@ -139,11 +140,11 @@ class Database:
 
             dos_dir = os.path.join(opt_dir, "dos")
             dos_jobs[dos_dir] = DosJob(
-                opt_id=opt_id,
-                sc_status=sc_status,
-                dos_status=dos_status,
-                sc_last_on=sc_last_on,
-                dos_last_on=dos_last_on,
+                opt_id=job[0],
+                sc_status=JobStatus(job[1]),
+                dos_status=JobStatus(job[2]),
+                sc_last_on=Machine(job[3]),
+                dos_last_on=Machine(job[4]),
             )
         return dos_jobs
 
@@ -176,7 +177,7 @@ class Database:
 
             wav_dir = os.path.join(opt_dir, "wav")
             wav_jobs[wav_dir] = WavJob(
-                opt_id=opt_id, wav_status=wav_status, wav_last_on=wav_last_on
+                opt_id=job[0], wav_status=JobStatus(job[1]), wav_last_on=Machine(job[2])
             )
         return wav_jobs
 
@@ -212,15 +213,12 @@ class Database:
             wav_jobs: A collection of every wav_job known.
         """
         import automagician.update_job as update_job
-
         logger = logging.getLogger()
-        import automagician.update_job as update_job
-
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
 
         for job_dir in dos_jobs:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             try:
                 self.add_dos_job_to_db(dos_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
@@ -230,7 +228,7 @@ class Database:
                 continue
 
         for job_dir in wav_jobs:
-            opt_dir = update_job.get_opt_dir(job_dir)
+            opt_dir = small_functions.get_opt_dir(job_dir)
             try:
                 self.add_wav_job_to_db(wav_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
