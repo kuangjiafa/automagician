@@ -116,11 +116,28 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the dos jobs associated with said job directory"""
         dos_jobs = {}
-        for job in self.db.execute("select * from dos_jobs").fetchall():
+        # Use LEFT JOIN to handle orphaned dos_jobs rows
+        query = """
+            SELECT d.opt_id, d.sc_status, d.dos_status, d.sc_last_on, d.dos_last_on, o.dir
+            FROM dos_jobs d
+            LEFT JOIN opt_jobs o ON d.opt_id = o.rowid
+        """
+        for job in self.db.execute(query).fetchall():
             opt_id = job[0]
-            opt_dir = self.get_string_from_db(
-                "select dir from opt_jobs where rowid = " + str(opt_id)
-            )
+            sc_status = JobStatus(job[1])
+            dos_status = JobStatus(job[2])
+            sc_last_on = Machine(job[3])
+            dos_last_on = Machine(job[4])
+            opt_dir = job[5]
+
+            # Skip orphaned rows where opt_jobs entry is missing
+            if opt_dir is None:
+                logging.warning(
+                    "Skipping orphaned dos_job with opt_id=%s (no matching opt_job)",
+                    opt_id,
+                )
+                continue
+
             dos_dir = os.path.join(opt_dir, "dos")
             dos_jobs[dos_dir] = DosJob(
                 opt_id=job[0],
@@ -138,11 +155,26 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the wav jobs associated with said job directory"""
         wav_jobs = {}
-        for job in self.db.execute("select * from wav_jobs").fetchall():
+        # Use LEFT JOIN to handle orphaned wav_jobs rows
+        query = """
+            SELECT w.opt_id, w.wav_status, w.wav_last_on, o.dir
+            FROM wav_jobs w
+            LEFT JOIN opt_jobs o ON w.opt_id = o.rowid
+        """
+        for job in self.db.execute(query).fetchall():
             opt_id = job[0]
-            opt_dir = self.get_string_from_db(
-                "select dir from opt_jobs where rowid = " + str(opt_id)
-            )
+            wav_status = JobStatus(job[1])
+            wav_last_on = Machine(job[2])
+            opt_dir = job[3]
+
+            # Skip orphaned rows where opt_jobs entry is missing
+            if opt_dir is None:
+                logging.warning(
+                    "Skipping orphaned wav_job with opt_id=%s (no matching opt_job)",
+                    opt_id,
+                )
+                continue
+
             wav_dir = os.path.join(opt_dir, "wav")
             wav_jobs[wav_dir] = WavJob(
                 opt_id=job[0], wav_status=JobStatus(job[1]), wav_last_on=Machine(job[2])
