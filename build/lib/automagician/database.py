@@ -3,7 +3,6 @@ import os
 import sqlite3
 from typing import Dict, Optional
 
-import automagician.small_functions as small_functions
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 
 
@@ -116,26 +115,18 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the dos jobs associated with said job directory"""
         dos_jobs = {}
-        query = """
-            SELECT d.opt_id, d.sc_status, d.dos_status, d.sc_last_on, d.dos_last_on, o.dir
-            FROM dos_jobs d
-            LEFT JOIN opt_jobs o ON d.opt_id = o.rowid
-        """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute("select * from dos_jobs").fetchall():
             opt_id = job[0]
-            sc_status = JobStatus(job[1])
-            dos_status = JobStatus(job[2])
-            sc_last_on = Machine(job[3])
-            dos_last_on = Machine(job[4])
-            opt_dir = job[5] if job[5] is not None else ""
-
+            opt_dir = self.get_string_from_db(
+                "select dir from opt_jobs where rowid = " + str(opt_id)
+            )
             dos_dir = os.path.join(opt_dir, "dos")
             dos_jobs[dos_dir] = DosJob(
-                opt_id=opt_id,
-                sc_status=sc_status,
-                dos_status=dos_status,
-                sc_last_on=sc_last_on,
-                dos_last_on=dos_last_on,
+                opt_id=job[0],
+                sc_status=JobStatus(job[1]),
+                dos_status=JobStatus(job[2]),
+                sc_last_on=Machine(job[3]),
+                dos_last_on=Machine(job[4]),
             )
         return dos_jobs
 
@@ -146,20 +137,14 @@ class Database:
             A dictionary where the keys are the job directoties, and the values
             are the wav jobs associated with said job directory"""
         wav_jobs = {}
-        query = """
-            SELECT w.opt_id, w.wav_status, w.wav_last_on, o.dir
-            FROM wav_jobs w
-            LEFT JOIN opt_jobs o ON w.opt_id = o.rowid
-        """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute("select * from wav_jobs").fetchall():
             opt_id = job[0]
-            wav_status = JobStatus(job[1])
-            wav_last_on = Machine(job[2])
-            opt_dir = job[3] if job[3] is not None else ""
-
+            opt_dir = self.get_string_from_db(
+                "select dir from opt_jobs where rowid = " + str(opt_id)
+            )
             wav_dir = os.path.join(opt_dir, "wav")
             wav_jobs[wav_dir] = WavJob(
-                opt_id=opt_id, wav_status=wav_status, wav_last_on=wav_last_on
+                opt_id=job[0], wav_status=JobStatus(job[1]), wav_last_on=Machine(job[2])
             )
         return wav_jobs
 
@@ -194,14 +179,14 @@ class Database:
             dos_jobs: A collection of every dos_job known.
             wav_jobs: A collection of every wav_job known.
         """
-        logger = logging.getLogger()
         import automagician.update_job as update_job
 
+        logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
 
         for job_dir in dos_jobs:
-            opt_dir = small_functions.get_opt_dir(job_dir)
+            opt_dir = update_job.get_opt_dir(job_dir)
             try:
                 self.add_dos_job_to_db(dos_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
@@ -211,7 +196,7 @@ class Database:
                 continue
 
         for job_dir in wav_jobs:
-            opt_dir = small_functions.get_opt_dir(job_dir)
+            opt_dir = update_job.get_opt_dir(job_dir)
             try:
                 self.add_wav_job_to_db(wav_jobs[job_dir], opt_dir, commit=False)
             except ValueError:
