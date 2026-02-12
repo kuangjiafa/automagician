@@ -5,7 +5,7 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -22,7 +22,9 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-from automagician.database import Database
+
+if TYPE_CHECKING:
+    from automagician.database import Database
 
 
 
