@@ -9,29 +9,9 @@ from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
-import automagician.process_job as process_job
+import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
@@ -137,19 +117,6 @@ def fix_error(
     return False
 
 
-# if CG isn't working, use Damped molecular dynamics
-def optimizer_review(job_directory: str) -> None:
-    """Returns None
-     --- What I think it wants to do below ---
-    Goal seems to be to combine XDATCAR and FE
-
-    Changes INCAR by adjusting INBARIAR to the most correct option
-    """
-    logger = logging.getLogger()
-    logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
-    return None
-
-
 def update_job_name(subfile: str) -> None:
     """Replaces lines that contain -N and -J with new lines
 
@@ -210,11 +177,6 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     write_incar.close()
 
 
-def get_opt_dir(job_dir: str) -> str:
-    """Replaces the dos sc and wav's that could be in a directory with nothing  to turn them into opt jobs"""
-    return re.compile(r"\/(dos|sc|wav)$").sub("", str(job_dir))
-
-
 def switch_subfile(
         job_dir: str,
         new_sub: str,
@@ -261,8 +223,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
-    job_type = process_job.classify_job_dir(job_dir)
-    opt_dir = get_opt_dir(job_dir)
+    job_type = small_functions.classify_job_dir(job_dir)
+    opt_dir = small_functions.get_opt_dir(job_dir)
 
     # for now, status -1 is for special jobs that no longer need optimization
     if job_type == "sc":

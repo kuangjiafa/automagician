@@ -5,6 +5,7 @@ import inspect
 import subprocess
 import os
 import time
+# pylint: skip-file
 import datetime
 import gzip
 import re
