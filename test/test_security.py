@@ -1,7 +1,6 @@
 import os
 import unittest
 from unittest.mock import MagicMock, patch
-import automagician.constants as constants
 
 class TestSecurityRepro(unittest.TestCase):
     @patch('automagician.machine.exists')
@@ -39,11 +38,16 @@ class TestSecurityRepro(unittest.TestCase):
 
         # Malicious USER environment variable
         malicious_user = 'user"; touch /tmp/pwned; echo "'
-        with patch.dict(os.environ, {'USER': malicious_user}):
-            # We need to reload constants because it's already imported and uses os.environ['USER']
-            import importlib
-            importlib.reload(constants)
-
+        
+        # Patch constants.LOCK_FILE and constants.LOCK_DIR directly to avoid mutating global state
+        # Also patch the USER environment variable and os.environ.get in the machine module
+        malicious_lock_file = f"/tmp/automagician/{malicious_user}-lock"
+        with patch('automagician.constants.LOCK_FILE', malicious_lock_file), \
+             patch('automagician.constants.LOCK_DIR', '/tmp/automagician'), \
+             patch('automagician.machine.constants.LOCK_FILE', malicious_lock_file), \
+             patch('automagician.machine.constants.LOCK_DIR', '/tmp/automagician'), \
+             patch.dict(os.environ, {'USER': malicious_user}):
+            
             write_lockfile(ssh_config, Machine.FRI)
 
             # Check the command passed to ssh.run
