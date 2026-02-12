@@ -4,6 +4,7 @@ import logging
 import unittest.mock
 import tempfile
 import shlex
+import pytest
 
 def test_is_oden():
     assert is_oden(Machine.FRI)
@@ -54,13 +55,13 @@ def test_ssh_scp_init():
 
 
 def test_scp_put_dir_quotes_paths():
-    # Mock SSHConfig
-    # We create a mock that behaves like what scp_put_dir expects
-    mock_ssh_config = unittest.mock.Mock()
-    # ssh_config.ssh.run is called
-    mock_ssh_config.ssh.run = unittest.mock.Mock()
-    # ssh_config.scp.put is called
-    mock_ssh_config.scp.put = unittest.mock.Mock()
+    # Mock SSHConfig to match real object structure
+    # SSHConfig has a .config field which is either "NoSSH" or SshScp(ssh, scp)
+    mock_ssh_config = unittest.mock.Mock(spec=SSHConfig)
+    mock_ssh_scp = unittest.mock.Mock()
+    mock_ssh_scp.ssh = unittest.mock.Mock()
+    mock_ssh_scp.scp = unittest.mock.Mock()
+    mock_ssh_config.config = mock_ssh_scp
 
     # Create a temporary directory
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -94,7 +95,7 @@ def test_scp_put_dir_quotes_paths():
         expected_dirname = os.path.dirname(remote_base + f"/{malicious_name}/file.txt")
         expected_cmd = "mkdir -p " + shlex.quote(expected_dirname)
 
-        for call in mock_ssh_config.ssh.run.call_args_list:
+        for call in mock_ssh_config.config.ssh.run.call_args_list:
             args, _ = call
             cmd = args[0]
             if "mkdir -p" in cmd:
@@ -103,4 +104,24 @@ def test_scp_put_dir_quotes_paths():
                     found_mkdir = True
                     break
 
-        assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.ssh.run.call_args_list}"
+        assert found_mkdir, f"Expected command '{expected_cmd}' not found in calls: {mock_ssh_config.config.ssh.run.call_args_list}"
+
+
+def test_scp_put_dir_raises_on_nossh():
+    """Test that scp_put_dir raises ValueError when ssh_config.config is 'NoSSH'"""
+    # Create a mock SSHConfig with config set to "NoSSH"
+    mock_ssh_config = unittest.mock.Mock(spec=SSHConfig)
+    mock_ssh_config.config = "NoSSH"
+    
+    # Create a temporary directory to use as local path
+    with tempfile.TemporaryDirectory() as temp_dir:
+        # Create a simple file so the directory is not empty
+        file_path = os.path.join(temp_dir, "test.txt")
+        with open(file_path, "w") as f:
+            f.write("test content")
+        
+        # Verify that calling scp_put_dir with NoSSH config raises ValueError
+        with pytest.raises(
+            ValueError, match="SSH configuration is required for scp_put_dir"
+        ):
+            scp_put_dir(temp_dir, "remote_dir", mock_ssh_config)
