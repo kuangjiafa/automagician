@@ -464,3 +464,41 @@ def test_get_submitted_job_in_dictionary(monkeypatch):
         call(["scancel", "53270"]),
     ]
     monkeypatch.call.assert_has_calls(scancel_calls)
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_tacc_wav_jobs(monkeypatch):
+    """Test that WAV jobs in TACC branch correctly check RUNNING status and set to INCOMPLETE."""
+    empty_squeue_output = ""
+    monkeypatch.check_output = MagicMock(return_value=empty_squeue_output)
+    monkeypatch.call = MagicMock(return_value="")
+    
+    # Setup WAV jobs with RUNNING status on TACC machine
+    wav_jobs = {
+        "/home/test/job1": WavJob(-1, JobStatus.RUNNING, Machine.STAMPEDE2_TACC),
+        "/home/test/job2": WavJob(-1, JobStatus.RUNNING, Machine.FRONTERA_TACC),
+        "/home/test/job3": WavJob(-1, JobStatus.INCOMPLETE, Machine.STAMPEDE2_TACC),
+    }
+    opt_jobs = {}
+    dos_jobs = {}
+    tacc_queue_sizes = [0, 0, 0]
+    
+    # Call get_submitted_jobs with TACC machine
+    get_submitted_jobs(
+        Machine.STAMPEDE2_TACC, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes
+    )
+    
+    # Verify queue size incremented for RUNNING jobs (job1 and job2)
+    # Queue array indices by machine: [STAMPEDE2_TACC at 0, FRONTERA_TACC at 1, LS6_TACC at 2]
+    assert tacc_queue_sizes[Machine.STAMPEDE2_TACC - 2] == 1  # job1
+    assert tacc_queue_sizes[Machine.FRONTERA_TACC - 2] == 1  # job2
+    assert tacc_queue_sizes[Machine.LS6_TACC - 2] == 0  # no jobs
+    
+    # Verify job1 status changed from RUNNING to INCOMPLETE (on same machine)
+    assert wav_jobs["/home/test/job1"].wav_status == JobStatus.INCOMPLETE
+    
+    # Verify job2 status still RUNNING (on different machine)
+    assert wav_jobs["/home/test/job2"].wav_status == JobStatus.RUNNING
+    
+    # Verify job3 status remains INCOMPLETE (wasn't RUNNING)
+    assert wav_jobs["/home/test/job3"].wav_status == JobStatus.INCOMPLETE
