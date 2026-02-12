@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import shutil
+import shlex
 import subprocess
 import traceback
 from os.path import exists
@@ -35,7 +36,7 @@ try:
             local: the directory on the local machine to transfer files to
         """
         for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
+                "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue

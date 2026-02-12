@@ -3,7 +3,6 @@ import os
 import sqlite3
 from typing import Dict, Optional
 
-import automagician.update_job as update_job
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 
 
@@ -180,6 +179,8 @@ class Database:
             dos_jobs: A collection of every dos_job known.
             wav_jobs: A collection of every wav_job known.
         """
+        import automagician.update_job as update_job
+
         logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
