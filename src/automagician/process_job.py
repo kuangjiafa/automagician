@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -5,7 +7,7 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -21,28 +23,30 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-from automagician.database import Database
+
+if TYPE_CHECKING:
+    from automagician.classes import SshScp
+    from automagician.database import Database
 
 try:
     from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
 except ImportError:
     pass
+
+
+def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+    """Puts files inside the remote directory to the local directory
+
+    Args:
+        remote: the directory on the remote machine to transfer files from
+        local: the directory on the local machine to transfer files to
+    """
+    for f in ssh_scp.ssh.run(
+            "cd " + remote + "; find . -type f | cut -c 2-"
+    ).stdout.split("\n"):
+        if len(f) < 1:
+            continue
+        ssh_scp.scp.get(remote + f, local + f)
 
 
 def process_opt(
@@ -681,6 +685,11 @@ def get_submitted_jobs(
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
 
 
+IS_DOS_REGEX = re.compile(r".*?(?<!^/home)\/dos$")
+IS_SC_REGEX = re.compile(r".*?(?<!^/home)\/sc$")
+IS_WAV_REGEX = re.compile(r".*?(?<!^/home)\/wav$")
+
+
 def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
     """Returns the type of job this is based on the ending directory name.
 
@@ -688,15 +697,11 @@ def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
     this would return "sc", and if it ended in /wav returns "wav".
     Finally if it does not match any of the following returns "opt"
     """
-    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
-    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
-    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
-
-    if is_dos_regex.match(str(os.path.normpath(job_dir))):
+    if IS_DOS_REGEX.match(str(os.path.normpath(job_dir))):
         return "dos"
-    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
+    elif IS_SC_REGEX.match(str(os.path.normpath(job_dir))):
         return "sc"
-    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
+    elif IS_WAV_REGEX.match(str(os.path.normpath(job_dir))):
         return "wav"
     else:
         return "opt"
