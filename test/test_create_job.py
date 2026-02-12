@@ -242,60 +242,83 @@ def test_create_sc_potcar(tmp_path):
     assert sub_quene == expected_sub_quene
 
 
-def setup_copy_inputs_test(tmp_path, subfile):
-    job_dir = tmp_path / "job"
-    job_dir.mkdir()
-    dest_dir = tmp_path / "dest"
-    (job_dir / subfile).write_text("sub")
-    (job_dir / "KPOINTS").write_text("kpoints")
-    (job_dir / "POTCAR").write_text("potcar")
-    return job_dir, dest_dir
-
-
 def test_copy_inputs_full(tmp_path):
+    job_dir = os.path.join(str(tmp_path), "job")
+    os.makedirs(job_dir)
+    dest_dir = os.path.join(str(tmp_path), "dest")
+
     subfile = "test.sub"
-    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
-    (job_dir / "INCAR").write_text("incar")
-    (job_dir / "CHGCAR").write_text("chgcar")
-    (job_dir / "CONTCAR").write_text("contcar")
-    (job_dir / "POSCAR").write_text("poscar")
+    with open(os.path.join(job_dir, subfile), "w") as f:
+        f.write("sub")
+    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
+        f.write("kpoints")
+    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
+        f.write("potcar")
+    with open(os.path.join(job_dir, "INCAR"), "w") as f:
+        f.write("incar")
+    with open(os.path.join(job_dir, "CHGCAR"), "w") as f:
+        f.write("chgcar")
+    with open(os.path.join(job_dir, "CONTCAR"), "w") as f:
+        f.write("contcar")
+    with open(os.path.join(job_dir, "POSCAR"), "w") as f:
+        f.write("poscar")
 
-    copy_inputs(subfile, str(job_dir), str(dest_dir))
+    copy_inputs(subfile, job_dir, dest_dir)
 
-    assert (dest_dir / subfile).exists()
-    assert (dest_dir / "KPOINTS").exists()
-    assert (dest_dir / "POTCAR").exists()
-    assert (dest_dir / "INCAR").exists()
-    assert (dest_dir / "CHGCAR").exists()
-    assert (dest_dir / "CONTCAR").exists()
+    assert os.path.isfile(os.path.join(dest_dir, subfile))
+    assert os.path.isfile(os.path.join(dest_dir, "KPOINTS"))
+    assert os.path.isfile(os.path.join(dest_dir, "POTCAR"))
+    assert os.path.isfile(os.path.join(dest_dir, "INCAR"))
+    assert os.path.isfile(os.path.join(dest_dir, "CHGCAR"))
+    assert os.path.isfile(os.path.join(dest_dir, "CONTCAR"))
     # If CONTCAR exists, POSCAR should NOT be copied
-    assert not (dest_dir / "POSCAR").exists()
+    assert not os.path.isfile(os.path.join(dest_dir, "POSCAR"))
 
 
 def test_copy_inputs_minimal(tmp_path):
+    job_dir = os.path.join(str(tmp_path), "job")
+    os.makedirs(job_dir)
+    dest_dir = os.path.join(str(tmp_path), "dest")
+
     subfile = "test.sub"
-    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
-    (job_dir / "INCAR").write_text("incar")
-    (job_dir / "POSCAR").write_text("poscar")
+    with open(os.path.join(job_dir, subfile), "w") as f:
+        f.write("sub")
+    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
+        f.write("kpoints")
+    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
+        f.write("potcar")
+    with open(os.path.join(job_dir, "INCAR"), "w") as f:
+        f.write("incar")
+    with open(os.path.join(job_dir, "POSCAR"), "w") as f:
+        f.write("poscar")
 
-    copy_inputs(subfile, str(job_dir), str(dest_dir))
+    copy_inputs(subfile, job_dir, dest_dir)
 
-    assert (dest_dir / subfile).exists()
-    assert (dest_dir / "KPOINTS").exists()
-    assert (dest_dir / "POTCAR").exists()
-    assert (dest_dir / "INCAR").exists()
-    assert (dest_dir / "POSCAR").exists()
-    assert not (dest_dir / "CHGCAR").exists()
-    assert not (dest_dir / "CONTCAR").exists()
+    assert os.path.isfile(os.path.join(dest_dir, subfile))
+    assert os.path.isfile(os.path.join(dest_dir, "KPOINTS"))
+    assert os.path.isfile(os.path.join(dest_dir, "POTCAR"))
+    assert os.path.isfile(os.path.join(dest_dir, "INCAR"))
+    assert os.path.isfile(os.path.join(dest_dir, "POSCAR"))
+    assert not os.path.isfile(os.path.join(dest_dir, "CHGCAR"))
+    assert not os.path.isfile(os.path.join(dest_dir, "CONTCAR"))
 
 
 def test_copy_inputs_missing_mandatory(tmp_path):
+    job_dir = os.path.join(str(tmp_path), "job")
+    os.makedirs(job_dir)
+    dest_dir = os.path.join(str(tmp_path), "dest")
+
     subfile = "test.sub"
-    job_dir, dest_dir = setup_copy_inputs_test(tmp_path, subfile)
+    with open(os.path.join(job_dir, subfile), "w") as f:
+        f.write("sub")
+    with open(os.path.join(job_dir, "KPOINTS"), "w") as f:
+        f.write("kpoints")
+    with open(os.path.join(job_dir, "POTCAR"), "w") as f:
+        f.write("potcar")
     # INCAR is missing
 
     with pytest.raises(FileNotFoundError):
-        copy_inputs(subfile, str(job_dir), str(dest_dir))
+        copy_inputs(subfile, job_dir, dest_dir)
 
 
 def test_create_sc_contcar(tmp_path):
