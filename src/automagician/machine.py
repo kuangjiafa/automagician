@@ -44,10 +44,7 @@ def get_machine_number() -> Machine:
 
 
 def ssh_scp_init(
-        machine: Machine,
-        home_dir: str,
-        balance: bool,
-        logger: logging.Logger
+    machine: Machine, home_dir: str, balance: bool, logger: logging.Logger
 ) -> SSHConfig:
     """Initializes ssh and sets the no_ssh variable appropriately
 
@@ -134,7 +131,7 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
 
     if machine < 2 and ssh_config.config != "NoSSH":
         if not ssh_config.config.ssh.run(
-                "test -d " + constants.LOCK_DIR, warn=True, hide=True
+            "test -d " + constants.LOCK_DIR, warn=True, hide=True
         ).ok:
             ssh_config.config.ssh.run("mkdir -p " + constants.LOCK_DIR)
 
@@ -204,9 +201,9 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     cwd = os.getcwd()
     os.chdir(local)
     for f in (
-            subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                    .stdout.decode("utf-8")
-                    .split("\n")
+        subprocess.run(["find", ".", "-type", "f"], capture_output=True)
+        .stdout.decode("utf-8")
+        .split("\n")
     ):
         if len(f) < 1:
             continue
