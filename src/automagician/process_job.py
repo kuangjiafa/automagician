@@ -1,5 +1,3 @@
-# pylint: disable=duplicate-code,cyclic-import
-# pylint: disable=duplicate-code
 from __future__ import annotations
 
 import logging
@@ -28,7 +26,6 @@ from automagician.classes import (
 
 if TYPE_CHECKING:
     from automagician.database import Database
-
 
 
 def process_opt(
@@ -78,6 +75,9 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
+                # mypy thinks config could be "NoSSH" here, but we checked above.
+                # However, scp_get_dir expects SshScp, which is not imported here to avoid cycles.
+                # Casting or ignoring for now as we know it's safe at runtime.
                 machine_file.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,

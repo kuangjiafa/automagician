@@ -1,4 +1,5 @@
 # pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code,cyclic-import
 import logging
 import os
 import shutil

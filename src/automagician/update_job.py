@@ -1,4 +1,5 @@
 # pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code,cyclic-import
 import datetime
 import logging
 import os
@@ -10,7 +11,6 @@ from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
-
 
 
 def add_preliminary_results(
