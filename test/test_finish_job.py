@@ -154,5 +154,6 @@ def test_wav_is_complete_old_file(tmp_path):
 
 
 def test_give_duplicate_certificate(tmp_path):
-    open(os.path.join(tmp_path, constants.CONVERGENCE_CERTIFICATE_NAME), "x")
+    with open(os.path.join(tmp_path, constants.CONVERGENCE_CERTIFICATE_NAME), "x"):
+        pass
     assert give_certificate(tmp_path) == 1

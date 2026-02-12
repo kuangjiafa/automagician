@@ -652,8 +652,8 @@ def get_submitted_jobs(
                 if dos_jobs[job_dir].sc_last_on == machine:
                     dos_jobs[job_dir].sc_status = JobStatus.INCOMPLETE
             if dos_jobs[job_dir].dos_status == JobStatus.RUNNING:
-                tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] = (
-                    tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
+                tacc_queue_sizes[dos_jobs[job_dir].dos_last_on - 2] = (
+                    tacc_queue_sizes[dos_jobs[job_dir].dos_last_on - 2] + 1
                 )
                 if dos_jobs[job_dir].dos_last_on == machine:
                     dos_jobs[job_dir].dos_status = JobStatus.INCOMPLETE
