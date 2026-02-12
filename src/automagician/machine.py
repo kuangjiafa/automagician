@@ -45,10 +45,7 @@ def get_machine_number() -> Machine:
 
 
 def ssh_scp_init(
-        machine: Machine,
-        home_dir: str,
-        balance: bool,
-        logger: logging.Logger
+    machine: Machine, home_dir: str, balance: bool, logger: logging.Logger
 ) -> SSHConfig:
     """Initializes ssh and sets the no_ssh variable appropriately
 
@@ -84,10 +81,11 @@ def ssh_scp_init(
                 )
                 scp = fabric.transfer.Transfer(ssh)
                 ssh.run("hostname")
+                return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
             except Exception:
                 logger.warning("you need fri-halifax keys for ssh to work")
                 return SSHConfig(config="NoSSH")
-    return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
+    return SSHConfig(config="NoSSH")
 
 
 def get_machine_name(machine_number: Machine) -> str:
@@ -216,19 +214,24 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     Returns:
       None
     """
+    if ssh_config.config == "NoSSH":
+        raise ValueError("SSH configuration is required for scp_put_dir. Please provide a valid SSHConfig with SSH enabled.")
+    
     cwd = os.getcwd()
-    os.chdir(local)
-    for f in (
+    try:
+        os.chdir(local)
+        for f in (
             subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                    .stdout.decode("utf-8")
-                    .split("\n")
-    ):
-        if len(f) < 1:
-            continue
-        dirname = os.path.dirname(remote + f[1:])
-        ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
-        ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
-    os.chdir(cwd)
+            .stdout.decode("utf-8")
+            .split("\n")
+        ):
+            if len(f) < 1:
+                continue
+            dirname = os.path.dirname(remote + f[1:])
+            ssh_config.config.ssh.run("mkdir -p " + shlex.quote(dirname))  # type: ignore
+            ssh_config.config.scp.put(local + f[1:], dirname)  # type: ignore
+    finally:
+        os.chdir(cwd)
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
