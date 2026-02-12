@@ -9,29 +9,7 @@ from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
-
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
@@ -245,47 +223,3 @@ def switch_subfile(
     update_job_name(new_sub)
 
 
-def set_status_for_newly_submitted_job(
-        job_dir: str,
-        job_machine: Machine,
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        opt_jobs: Dict[str, OptJob],
-        error: bool,
-) -> None:
-    """Sets the job status to that of special jobs that no longer need to be optoomised
-
-
-    job_dir - the directory that the job is found in
-
-    job_machine - the machine the job is running on
-
-    """
-    job_type = process_job.classify_job_dir(job_dir)
-    opt_dir = get_opt_dir(job_dir)
-
-    # for now, status -1 is for special jobs that no longer need optimization
-    if job_type == "sc":
-        if error:
-            dos_jobs[opt_dir].sc_status = JobStatus.ERROR
-        else:
-            dos_jobs[opt_dir].sc_status = JobStatus.RUNNING
-        dos_jobs[opt_dir].sc_last_on = job_machine
-    elif job_type == "dos":
-        if error:
-            dos_jobs[opt_dir].dos_status = JobStatus.ERROR
-        else:
-            dos_jobs[opt_dir].dos_status = JobStatus.RUNNING
-        dos_jobs[opt_dir].dos_last_on = job_machine
-    elif job_type == "wav":
-        if error:
-            wav_jobs[opt_dir].wav_status = JobStatus.ERROR
-        else:
-            wav_jobs[opt_dir].wav_status = JobStatus.RUNNING
-        wav_jobs[opt_dir].wav_last_on = job_machine
-    else:
-        if error:
-            opt_jobs[opt_dir].status = JobStatus.ERROR
-        else:
-            opt_jobs[opt_dir].status = JobStatus.RUNNING
-        opt_jobs[opt_dir].last_on = job_machine

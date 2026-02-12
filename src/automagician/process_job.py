@@ -28,27 +28,6 @@ if TYPE_CHECKING:
     from automagician.classes import SshScp
     from automagician.database import Database
 
-try:
-    from automagician.classes import SshScp
-except ImportError:
-    pass
-
-
-def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-    """Puts files inside the remote directory to the local directory
-
-    Args:
-        remote: the directory on the remote machine to transfer files from
-        local: the directory on the local machine to transfer files to
-    """
-    for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-    ).stdout.split("\n"):
-        if len(f) < 1:
-            continue
-        ssh_scp.scp.get(remote + f, local + f)
-
-
 def process_opt(
         job_directory: str,
         machine: Machine,
@@ -96,7 +75,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                scp_get_dir(
+                machine_file.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -830,7 +809,7 @@ def submit_queue(
             new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
             machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
             ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
-            update_job.set_status_for_newly_submitted_job(
+            set_status_for_newly_submitted_job(
                 job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
             )
             sub_queue_index = sub_queue_index + 1
@@ -845,7 +824,7 @@ def submit_queue(
                 logger.warning(
                     f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                 )
-            update_job.set_status_for_newly_submitted_job(
+            set_status_for_newly_submitted_job(
                 job_dir,
                 machine,
                 dos_jobs,
@@ -902,11 +881,57 @@ def submit_queue(
                     add_to_insta_submit(
                         job_dir, machine_file.get_machine_name(Machine(i + 2)), database
                     )
-                update_job.set_status_for_newly_submitted_job(
+                set_status_for_newly_submitted_job(
                     job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
                 )
                 sub_queue_index = sub_queue_index + 1
     os.chdir(cwd)
+
+
+def set_status_for_newly_submitted_job(
+        job_dir: str,
+        job_machine: Machine,
+        dos_jobs: Dict[str, DosJob],
+        wav_jobs: Dict[str, WavJob],
+        opt_jobs: Dict[str, OptJob],
+        error: bool,
+) -> None:
+    """Sets the job status to that of special jobs that no longer need to be optoomised
+
+
+    job_dir - the directory that the job is found in
+
+    job_machine - the machine the job is running on
+
+    """
+    job_type = classify_job_dir(job_dir)
+    opt_dir = update_job.get_opt_dir(job_dir)
+
+    # for now, status -1 is for special jobs that no longer need optimization
+    if job_type == "sc":
+        if error:
+            dos_jobs[opt_dir].sc_status = JobStatus.ERROR
+        else:
+            dos_jobs[opt_dir].sc_status = JobStatus.RUNNING
+        dos_jobs[opt_dir].sc_last_on = job_machine
+    elif job_type == "dos":
+        if error:
+            dos_jobs[opt_dir].dos_status = JobStatus.ERROR
+        else:
+            dos_jobs[opt_dir].dos_status = JobStatus.RUNNING
+        dos_jobs[opt_dir].dos_last_on = job_machine
+    elif job_type == "wav":
+        if error:
+            wav_jobs[opt_dir].wav_status = JobStatus.ERROR
+        else:
+            wav_jobs[opt_dir].wav_status = JobStatus.RUNNING
+        wav_jobs[opt_dir].wav_last_on = job_machine
+    else:
+        if error:
+            opt_jobs[opt_dir].status = JobStatus.ERROR
+        else:
+            opt_jobs[opt_dir].status = JobStatus.RUNNING
+        opt_jobs[opt_dir].last_on = job_machine
 
 
 def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import logging
 import os
@@ -5,10 +7,13 @@ import re
 import socket
 import subprocess
 from os.path import exists
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import automagician.constants as constants
 from automagician.classes import Machine, SSHConfig
+
+if TYPE_CHECKING:
+    from automagician.classes import SshScp
 
 no_fabric = False
 try:
@@ -214,6 +219,22 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
         ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
         ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
     os.chdir(cwd)
+
+
+def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+    """Puts files inside the remote directory to the local directory
+
+    Args:
+        remote: the directory on the remote machine to transfer files from
+        local: the directory on the local machine to transfer files to
+        ssh_scp: The SshScp object to use for the transfer
+    """
+    for f in ssh_scp.ssh.run(
+            "cd " + remote + "; find . -type f | cut -c 2-"
+    ).stdout.split("\n"):
+        if len(f) < 1:
+            continue
+        ssh_scp.scp.get(remote + f, local + f)
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
