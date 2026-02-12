@@ -225,9 +225,11 @@ def determine_convergence(job_directory: str) -> bool:
     # use ll_out to determine convergence
     logger.debug("running vef.pl")
     cwd = os.getcwd()
-    os.chdir(job_directory)
-    subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
-    os.chdir(cwd)
+    try:
+        os.chdir(job_directory)
+        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    finally:
+        os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
         return False
     if is_isif3(job_directory):
@@ -789,119 +791,121 @@ def submit_queue(
     subfile = machine_file.get_subfile(machine)
     logger.debug("starting queue submit")
     cwd = os.getcwd()
-    if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
-        other_subfile = machine_file.get_subfile(Machine(1 - machine))
+    try:
+        if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
+            other_subfile = machine_file.get_subfile(Machine(1 - machine))
 
-        this_machine_job_count = len(
-            str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
-        )
-        other_machine_job_count = 0
-        match ssh_config.config:
-            case "NoSSH":
-                other_machine_job_count = 0
-            case SshScp(ssh=ssh):
-                other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
-        diff_in_size = this_machine_job_count - other_machine_job_count
-        num_to_sub = len(sub_queue)
-        num_to_sub_there = num_to_sub / 2 + diff_in_size
-
-        if not balance:
-            num_to_sub_there = 0
-        elif ssh_config.config == "NoSSH":
-            num_to_sub_there = 0
-        elif num_to_sub_there < 0:
-            num_to_sub_there = 0
-        elif num_to_sub_there > num_to_sub:
-            num_to_sub_there = num_to_sub
-
-        logger.debug(
-            f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
-        )
-
-        sub_queue_index = 0
-        while sub_queue_index < num_to_sub_there:
-            job_dir = sub_queue[sub_queue_index]
-            update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
-            new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
-            machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
-            update_job.set_status_for_newly_submitted_job(
-                job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
+            this_machine_job_count = len(
+                str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
-            sub_queue_index = sub_queue_index + 1
+            other_machine_job_count = 0
+            match ssh_config.config:
+                case "NoSSH":
+                    other_machine_job_count = 0
+                case SshScp(ssh=ssh):
+                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            diff_in_size = this_machine_job_count - other_machine_job_count
+            num_to_sub = len(sub_queue)
+            num_to_sub_there = num_to_sub / 2 + diff_in_size
 
-        while sub_queue_index < num_to_sub:
-            job_dir = sub_queue[sub_queue_index]
-            os.chdir(job_dir)
-            sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
-            print(sbatch_process)
-            print(sbatch_process.returncode)
-            if sbatch_process.returncode != 0:
-                logger.warning(
-                    f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
-                )
-            update_job.set_status_for_newly_submitted_job(
-                job_dir,
-                machine,
-                dos_jobs,
-                wav_jobs,
-                opt_jobs,
-                sbatch_process.returncode != 0,
+            if not balance:
+                num_to_sub_there = 0
+            elif ssh_config.config == "NoSSH":
+                num_to_sub_there = 0
+            elif num_to_sub_there < 0:
+                num_to_sub_there = 0
+            elif num_to_sub_there > num_to_sub:
+                num_to_sub_there = num_to_sub
+
+            logger.debug(
+                f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
             )
-            sub_queue_index = sub_queue_index + 1
 
-    else:  # tacc
-        num_to_sub = len(sub_queue)
-        logger.debug("num to submit is " + str(num_to_sub))
-        num_can_sub = [0, 0, 0]
-        total_free_spaces = 0
-        num_will_sub = [0, 0, 0]
-        # will_hit_limit = False
-
-        for i in range(0, 3):
-            num_can_sub[i] = constants.TACC_QUEUE_MAXES[i] - tacc_queue_sizes[i]
-            total_free_spaces = total_free_spaces + num_can_sub[i]
-
-        if not balance:
-            total_free_spaces = num_can_sub[0]
-            num_can_sub[1] = 0
-            num_can_sub[2] = 0
-
-        if total_free_spaces < num_to_sub:
-            num_will_sub = num_can_sub
-            # will_hit_limit = True
-        else:
-            for i in range(0, 3):
-                if total_free_spaces == 0:
-                    continue
-                num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
-                num_to_sub = num_to_sub - num_will_sub[i]
-                total_free_spaces = total_free_spaces - num_can_sub[i]
-
-        sub_queue_index = 0
-        for i in range(0, 3):
-            for _ in range(0, num_will_sub[i]):
+            sub_queue_index = 0
+            while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
-                os.chdir(job_dir)
-                if i + 2 == machine:
-                    subprocess.call(
-                        ["sbatch", machine_file.get_subfile(Machine(i + 2))]
-                    )
-                else:
-                    update_job.switch_subfile(
-                        job_dir,
-                        machine_file.get_subfile(Machine(i + 2)),
-                        subfile,
-                        machine,
-                    )
-                    add_to_insta_submit(
-                        job_dir, machine_file.get_machine_name(Machine(i + 2)), database
-                    )
+                update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
+                new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
+                machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
+                ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
                 update_job.set_status_for_newly_submitted_job(
-                    job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
+                    job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
                 sub_queue_index = sub_queue_index + 1
-    os.chdir(cwd)
+
+            while sub_queue_index < num_to_sub:
+                job_dir = sub_queue[sub_queue_index]
+                os.chdir(job_dir)
+                sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
+                print(sbatch_process)
+                print(sbatch_process.returncode)
+                if sbatch_process.returncode != 0:
+                    logger.warning(
+                        f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
+                    )
+                update_job.set_status_for_newly_submitted_job(
+                    job_dir,
+                    machine,
+                    dos_jobs,
+                    wav_jobs,
+                    opt_jobs,
+                    sbatch_process.returncode != 0,
+                )
+                sub_queue_index = sub_queue_index + 1
+
+        else:  # tacc
+            num_to_sub = len(sub_queue)
+            logger.debug("num to submit is " + str(num_to_sub))
+            num_can_sub = [0, 0, 0]
+            total_free_spaces = 0
+            num_will_sub = [0, 0, 0]
+            # will_hit_limit = False
+
+            for i in range(0, 3):
+                num_can_sub[i] = constants.TACC_QUEUE_MAXES[i] - tacc_queue_sizes[i]
+                total_free_spaces = total_free_spaces + num_can_sub[i]
+
+            if not balance:
+                total_free_spaces = num_can_sub[0]
+                num_can_sub[1] = 0
+                num_can_sub[2] = 0
+
+            if total_free_spaces < num_to_sub:
+                num_will_sub = num_can_sub
+                # will_hit_limit = True
+            else:
+                for i in range(0, 3):
+                    if total_free_spaces == 0:
+                        continue
+                    num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
+                    num_to_sub = num_to_sub - num_will_sub[i]
+                    total_free_spaces = total_free_spaces - num_can_sub[i]
+
+            sub_queue_index = 0
+            for i in range(0, 3):
+                for _ in range(0, num_will_sub[i]):
+                    job_dir = sub_queue[sub_queue_index]
+                    os.chdir(job_dir)
+                    if i + 2 == machine:
+                        subprocess.call(
+                            ["sbatch", machine_file.get_subfile(Machine(i + 2))]
+                        )
+                    else:
+                        update_job.switch_subfile(
+                            job_dir,
+                            machine_file.get_subfile(Machine(i + 2)),
+                            subfile,
+                            machine,
+                        )
+                        add_to_insta_submit(
+                            job_dir, machine_file.get_machine_name(Machine(i + 2)), database
+                        )
+                    update_job.set_status_for_newly_submitted_job(
+                        job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
+                    )
+                    sub_queue_index = sub_queue_index + 1
+    finally:
+        os.chdir(cwd)
 
 
 def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
