@@ -68,21 +68,23 @@ def ssh_scp_init(
         if no_fabric:
             logger.warning("you need fabric for ssh to work")
             return SSHConfig(config="NoSSH")
-        else:
-            try:
-                ssh = fabric.Connection(
-                    user=os.environ["USER"],
-                    host=hostname,
-                    connect_kwargs={
-                        "key_filename": home_dir + "/.ssh/automagician_id_rsa"
-                    },
-                    config=fabric.config.Config(overrides={"warn": True}),
-                )
-                scp = fabric.transfer.Transfer(ssh)
-                ssh.run("hostname")
-            except Exception:
-                logger.warning("you need fri-halifax keys for ssh to work")
-                return SSHConfig(config="NoSSH")
+    else:
+        return SSHConfig(config="NoSSH")
+
+    try:
+        ssh = fabric.Connection(
+            user=os.environ["USER"],
+            host=hostname,
+            connect_kwargs={
+                "key_filename": home_dir + "/.ssh/automagician_id_rsa"
+            },
+            config=fabric.config.Config(overrides={"warn": True}),
+        )
+        scp = fabric.transfer.Transfer(ssh)
+        ssh.run("hostname")
+    except Exception:
+        logger.warning("you need fri-halifax keys for ssh to work")
+        return SSHConfig(config="NoSSH")
     return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
 
 
@@ -211,6 +213,25 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
         ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
         ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
     os.chdir(cwd)
+
+
+if not no_fabric:
+    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+        """Puts files inside the remote directory to the local directory
+
+        Args:
+        remote (str): the directory on the remote machine to transfer files from
+        local (str): the directory on the local machine to transfer files to
+        """
+        for f in ssh_scp.ssh.run(
+            "cd " + remote + "; find . -type f | cut -c 2-"
+        ).stdout.split("\n"):
+            if len(f) < 1:
+                continue
+            ssh_scp.scp.get(remote + f, local + f)
+else:
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+        pass
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:

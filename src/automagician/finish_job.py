@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code,cyclic-import
 import logging
 import os
 import shutil
@@ -5,7 +6,6 @@ import subprocess
 import time
 
 import automagician.constants as constants
-import automagician.update_job as update_job
 
 
 def wrap_up(job_directory: str) -> None:
@@ -59,6 +59,9 @@ def wrap_up(job_directory: str) -> None:
         )
         shutil.move("ll_out", largest_run)
         logger.warning("combine_XDAT_FE disabled due to bugs")
+
+    import automagician.update_job as update_job
+
     update_job.optimizer_review(job_directory)
     os.chdir(cwd)
 

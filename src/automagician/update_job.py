@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code,cyclic-import
 import datetime
 import logging
 import os
@@ -8,29 +9,8 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
-try:
-    from automagician.classes import SshScp
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
@@ -105,6 +85,8 @@ def fix_error(
       True if a fix was attempted,
     Changes:
       Resubmits the job iff a fix was attempted"""
+    import automagician.finish_job as finish_job
+
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
     for error_message in error_messages:
@@ -260,6 +242,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
+
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
