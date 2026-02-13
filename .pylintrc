@@ -79,3 +79,4 @@ disable=
     too-many-nested-blocks,
     missing-final-newline,
     too-many-positional-arguments,
+    unknown-option-value,

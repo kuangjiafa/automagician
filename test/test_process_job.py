@@ -224,6 +224,9 @@ def test_process_unconverged_NO_CONTCAR(mock_run, tmp_path):
 @patch("automagician.finish_job.subprocess.run")
 def test_process_unconverged_files_present(mock_run, tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     shutil.copytree("test/test_files/h2_completed_run", job_path)
     opt_jobs = {}
     mock_job = OptJob(JobStatus.INCOMPLETE, 0, 0)
@@ -461,6 +464,11 @@ def test_process_opt_failed_u_job(mock_run, mock_call, tmp_path):
 
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
+
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_dir, args[1]))
+    mock_run.side_effect = side_effect
+
     shutil.copytree("test/test_files/failed_u_run", job_dir)
     os.mkdir(home_dir)
     test_job = OptJob(JobStatus.INCOMPLETE, 0, 0)
@@ -486,7 +494,7 @@ def test_process_opt_failed_u_job(mock_run, mock_call, tmp_path):
     assert not os.path.exists(os.path.join(job_dir, "convergence_certificate"))
     with open(os.path.join(tmp_path, "prelminary_results.txt"), "r") as f:
         file_as_str = f.read()
-        assert file_as_str == ""
+        assert file_as_str == f"{job_dir}\n     0     0.0     0.0\n"
 
 
 @patch("automagician.process_job.subprocess.call")
@@ -537,7 +545,9 @@ def test_determine_convergence_converged_h2_isif_3(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2_completed_run", job_dir)
     with open(os.path.join(job_dir, "INCAR"), "a+") as f:
-        f.write("ISIF = 3")
+        f.write("\nISIF = 3")
+    with open(os.path.join(job_dir, "fe.dat"), "w"):
+        pass
     converged = determine_convergence(job_dir)
     assert converged is False
 

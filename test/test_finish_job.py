@@ -16,6 +16,9 @@ from automagician.finish_job import (
 
 @patch("automagician.finish_job.subprocess.run")
 def test_wrap_up_no_previous_attempts(mock_run, tmp_path):
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -29,6 +32,9 @@ def test_wrap_up_no_previous_attempts(mock_run, tmp_path):
 
 @patch("automagician.finish_job.subprocess.run")
 def test_wrap_up_one_previous_attempt(mock_run, tmp_path):
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -43,6 +49,9 @@ def test_wrap_up_one_previous_attempt(mock_run, tmp_path):
 
 @patch("automagician.finish_job.subprocess.run")
 def test_wrap_up_previous_attempts_deleted(mock_run, tmp_path):
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -57,6 +66,9 @@ def test_wrap_up_previous_attempts_deleted(mock_run, tmp_path):
 
 @patch("automagician.finish_job.subprocess.run")
 def test_wrap_up_double_digits(mock_run, tmp_path):
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -72,6 +84,9 @@ def test_wrap_up_double_digits(mock_run, tmp_path):
 
 @patch("automagician.finish_job.subprocess.run")
 def test_wrap_up_error(mock_run, tmp_path):
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)

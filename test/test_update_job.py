@@ -96,6 +96,9 @@ def test_fix_error_ZBRENT_no_CONTCAR(tmp_path):
 @patch("automagician.finish_job.subprocess.run")
 def test_fix_error_ZBRENT_CONTCAR_present(mock_run, tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
+    def side_effect(args, **kwargs):
+        os.mkdir(os.path.join(job_path, args[1]))
+    mock_run.side_effect = side_effect
     shutil.copytree("test/test_files/failed_u_run", job_path)
     error_was_fixed = fix_error(job_path)
     assert error_was_fixed is True
@@ -106,6 +109,13 @@ def test_fix_error_ZBRENT_CONTCAR_present(mock_run, tmp_path):
 def test_fix_error_bad_POTCAR(mock_call, tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
     shutil.copytree("test/test_files/bad_potcar", job_path)
+
+    current_dir = os.getcwd()
+    def side_effect(args, **kwargs):
+        shutil.copy(os.path.join(current_dir, "test/test_files/bad_potcar/POTCAR_fixed"), os.path.join(job_path, "POTCAR"))
+        return 0
+    mock_call.side_effect = side_effect
+
     error_was_fixed = fix_error(job_path)
     assert error_was_fixed is True
     assert filecmp.cmp(

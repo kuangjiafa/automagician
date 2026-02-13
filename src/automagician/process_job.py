@@ -782,67 +782,67 @@ def submit_queue(
     logger.debug("starting queue submit")
     cwd = os.getcwd()
     try:
-        if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
+        if machine in (Machine.FRI, Machine.HALIFAX):  # fri-halifax
             other_subfile = machine_file.get_subfile(Machine(1 - machine))
 
-        this_machine_job_count = len(
-            str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
-        )
-        other_machine_job_count = 0
-        if ssh_config.config == "NoSSH":
+            this_machine_job_count = len(
+                str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
+            )
             other_machine_job_count = 0
-        else:
-            other_machine_job_count = int(
-                ssh_config.config.ssh.run("squeue", hide=True).stdout
-            )
-        diff_in_size = this_machine_job_count - other_machine_job_count
-        num_to_sub = len(sub_queue)
-        num_to_sub_there = num_to_sub / 2 + diff_in_size
-
-        if not balance:
-            num_to_sub_there = 0
-        elif ssh_config.config == "NoSSH":
-            num_to_sub_there = 0
-        elif num_to_sub_there < 0:
-            num_to_sub_there = 0
-        elif num_to_sub_there > num_to_sub:
-            num_to_sub_there = num_to_sub
-
-        logger.debug(
-            f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
-        )
-
-        sub_queue_index = 0
-        while sub_queue_index < num_to_sub_there:
-            job_dir = sub_queue[sub_queue_index]
-            update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
-            new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
-            machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-            ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
-            update_job.set_status_for_newly_submitted_job(
-                job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
-            )
-            sub_queue_index = sub_queue_index + 1
-
-        while sub_queue_index < num_to_sub:
-            job_dir = sub_queue[sub_queue_index]
-            os.chdir(job_dir)
-            sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
-            print(sbatch_process)
-            print(sbatch_process.returncode)
-            if sbatch_process.returncode != 0:
-                logger.warning(
-                    f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            else:
+                other_machine_job_count = int(
+                    ssh_config.config.ssh.run("squeue", hide=True).stdout
                 )
-            update_job.set_status_for_newly_submitted_job(
-                job_dir,
-                machine,
-                dos_jobs,
-                wav_jobs,
-                opt_jobs,
-                sbatch_process.returncode != 0,
+            diff_in_size = this_machine_job_count - other_machine_job_count
+            num_to_sub = len(sub_queue)
+            num_to_sub_there = num_to_sub / 2 + diff_in_size
+
+            if not balance:
+                num_to_sub_there = 0
+            elif ssh_config.config == "NoSSH":
+                num_to_sub_there = 0
+            elif num_to_sub_there < 0:
+                num_to_sub_there = 0
+            elif num_to_sub_there > num_to_sub:
+                num_to_sub_there = num_to_sub
+
+            logger.debug(
+                f"num to sub here is {str(num_to_sub - num_to_sub_there)} , num to sub there is {str(num_to_sub_there)}"
             )
-            sub_queue_index = sub_queue_index + 1
+
+            sub_queue_index = 0
+            while sub_queue_index < num_to_sub_there:
+                job_dir = sub_queue[sub_queue_index]
+                update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
+                new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
+                machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
+                ssh_config.ssh.run("cd " + new_loc + " && sbatch " + other_subfile)  # type: ignore
+                update_job.set_status_for_newly_submitted_job(
+                    job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
+                )
+                sub_queue_index = sub_queue_index + 1
+
+            while sub_queue_index < num_to_sub:
+                job_dir = sub_queue[sub_queue_index]
+                os.chdir(job_dir)
+                sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
+                print(sbatch_process)
+                print(sbatch_process.returncode)
+                if sbatch_process.returncode != 0:
+                    logger.warning(
+                        f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
+                    )
+                update_job.set_status_for_newly_submitted_job(
+                    job_dir,
+                    machine,
+                    dos_jobs,
+                    wav_jobs,
+                    opt_jobs,
+                    sbatch_process.returncode != 0,
+                )
+                sub_queue_index = sub_queue_index + 1
 
         else:  # tacc
             num_to_sub = len(sub_queue)

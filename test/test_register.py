@@ -140,6 +140,7 @@ def test_register_jobs(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2", opt_job_1)
         os.mkdir(os.path.join(opt_job_1, "dos"))
@@ -169,6 +170,7 @@ def test_register_jobs(mock_run, mock_call, tmp_path):
 @patch("automagician.process_job.subprocess.call")
 @patch("automagician.finish_job.subprocess.run")
 def test_register_jobs_converged(mock_run, mock_call, tmp_path):
+    mock_call.return_value = 0
     cwd = os.getcwd()
     try:
         opt_jobs = {}
@@ -179,6 +181,7 @@ def test_register_jobs_converged(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
         os.mkdir(os.path.join(opt_job_1, "dos"))
@@ -208,6 +211,7 @@ def test_register_jobs_converged(mock_run, mock_call, tmp_path):
 @patch("automagician.process_job.subprocess.call")
 @patch("automagician.finish_job.subprocess.run")
 def test_register_empty_note(mock_run, mock_call, tmp_path):
+    mock_call.return_value = 0
     cwd = os.getcwd()
     try:
         opt_jobs = {}
@@ -218,6 +222,7 @@ def test_register_empty_note(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
         with open(os.path.join(opt_job_1, "automagic_note"), "w+"):
@@ -249,6 +254,7 @@ def test_register_empty_note(mock_run, mock_call, tmp_path):
 @patch("automagician.process_job.subprocess.call")
 @patch("automagician.finish_job.subprocess.run")
 def test_register_dos_note(mock_run, mock_call, tmp_path):
+    mock_call.return_value = 0
     cwd = os.getcwd()
     try:
         opt_jobs = {}
@@ -259,6 +265,7 @@ def test_register_dos_note(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
         with open(os.path.join(opt_job_1, "automagic_note"), "w+") as f:
@@ -292,6 +299,7 @@ def test_register_dos_note(mock_run, mock_call, tmp_path):
 @patch("automagician.process_job.subprocess.call")
 @patch("automagician.finish_job.subprocess.run")
 def test_register_wav_note(mock_run, mock_call, tmp_path):
+    mock_call.return_value = 0
     cwd = os.getcwd()
     try:
         opt_jobs = {}
@@ -302,6 +310,7 @@ def test_register_wav_note(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
         with open(os.path.join(opt_job_1, "automagic_note"), "w+") as f:
@@ -333,6 +342,7 @@ def test_register_wav_note(mock_run, mock_call, tmp_path):
 @patch("automagician.process_job.subprocess.call")
 @patch("automagician.finish_job.subprocess.run")
 def test_register_dos_and_wav_note(mock_run, mock_call, tmp_path):
+    mock_call.return_value = 0
     cwd = os.getcwd()
     try:
         opt_jobs = {}
@@ -343,6 +353,7 @@ def test_register_dos_and_wav_note(mock_run, mock_call, tmp_path):
         preliminary_results = open(preliminary_results_path, "w")
         sub_queue = []
         home_directory = os.path.join(tmp_path, "home")
+        os.mkdir(home_directory)
         opt_job_1 = os.path.join(tmp_path, "opt_job_1")
         shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
         with open(os.path.join(opt_job_1, "automagic_note"), "w+") as f:
