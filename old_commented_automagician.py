@@ -90,14 +90,14 @@ no_ssh = False
 
 class opt_job:
   """A class to represent an optomization job
-  
-  status 
+
+  status
     The status of this job
       0 means converged
       1 means unconverged
       2 means error
       -1 means running
-  
+
   home_machine
     The machine this job is on
   last_on
@@ -110,7 +110,7 @@ class opt_job:
 
 class dos_job:
   """Density optomization job
-  
+
   opt_id
     The id of the optomization job this is connected to
   sc_status
@@ -128,7 +128,7 @@ class dos_job:
   sc_last_on
     The machine the of the optomization job this is connected to
   dos_last_on
-    The machine that this job was connected to 
+    The machine that this job was connected to
     """
   opt_dir = None
 
@@ -171,11 +171,11 @@ class JobLimitError(Exception):
 
 class JobStatus(IntEnum):
   """A enum storing the status of a job
-  
+
   Converged = 0
   Incomplete = 1
   Error = 2
-  Running = -1 
+  Running = -1
   NotFound = -10"""
   Converged = 0
   Incomplete = 1
@@ -192,11 +192,11 @@ def automagic_exit():
   exit()
 
 def check_has_opt(files):
-  """ Checks if the list provided the nessicary files for an optimization job 
+  """ Checks if the list provided the nessicary files for an optimization job
    Args:
     files (list[str]): All of the files in a directory
-   Returns: 
-    bool: True if the list contains all of POSCAR, POTCAR, INCAR, KPOINTS, 
+   Returns:
+    bool: True if the list contains all of POSCAR, POTCAR, INCAR, KPOINTS,
     and the subfile.
   Modifies:
     Nothing
@@ -206,7 +206,7 @@ def check_has_opt(files):
     None exist
   Tests:
     Complete and in /home/jw53959/project/unitTests.py"""
-  calc_files = ["POSCAR","POTCAR","INCAR","KPOINTS",subfile] 
+  calc_files = ["POSCAR","POTCAR","INCAR","KPOINTS",subfile]
   for target_file in calc_files:
     if (target_file not in files):
       # sprint("nope!")
@@ -215,14 +215,14 @@ def check_has_opt(files):
 #TODO: Why would frilab.sub not work?
 
 def delpwd():
-  """ Deletes jobs from the database where the directory equals the present working directory 
+  """ Deletes jobs from the database where the directory equals the present working directory
   Args:
     None
-  Returns: 
+  Returns:
     Nothing
   Modifies:
     db:
-      Deletes from the opt_jobs table the jubs where the directory equals the present working 
+      Deletes from the opt_jobs table the jubs where the directory equals the present working
       directory
   Uses:
     db
@@ -239,7 +239,7 @@ def delpwd():
 
 def get_machine_name(machine_number):
   """Returns the name of the machine nane, or localhost if not found
-  Args: 
+  Args:
     machine_number (int): The number of the machine
   Returns:
     str: the name of the machine connected with machine_number, or localhost if none are connected
@@ -294,7 +294,7 @@ def ssh_scp_init():
   Additonally opens up a scp connection
   Args:
     None
-  Returns: 
+  Returns:
     Nothing
   Modifies:
     ssh
@@ -312,7 +312,7 @@ def ssh_scp_init():
   global ssh
   global scp
   global no_ssh
-  
+
   if machine < 2:
     hostname = get_machine_name(1 - machine)
     if no_fabric:
@@ -338,13 +338,13 @@ def write_lockfile():
   """Creates a lockfile to stop two automagicians from treading on each other
   Args:
     None
-  Returns: 
+  Returns:
     Nothing
   Modifies:
     machine
       Creates the lockdir directory if it dosent exist, and sets permissions to 777.
       if a lockfile does not exist in the lockdir directory creates a lockfile
-      
+
       lockfile
         Contains USER, machine, process PID, and the time started at
   Exits:
@@ -383,7 +383,7 @@ def write_lockfile():
 
 def scp_get_dir(remote, local):
   """Puts files inside the remote directory to the local directory
-  
+
   Args:
     remote (str): the directory on the remote machine to transfer files from
     local (str): the directory on the local machine to transfer files to
@@ -401,7 +401,7 @@ def scp_get_dir(remote, local):
 
 def scp_put_dir(local, remote):
   """Puts files inside the local directory to the remote directory
-  
+
   Args:
     remote (str): the directory on the remote machine to transfer files to
     local (str): the directory on the local machine to transfer files from
@@ -424,13 +424,13 @@ def scp_put_dir(local, remote):
 
 def db_init(path):
   """Initalizes the database, creating the correct tables
-  
-  Args: 
+
+  Args:
     path (str): A path to where the db should be placed at
   Modifies:
     Adds the nessicary tables to the database
 
-    Creates the opt_jobs, dos_jobs, wav_jobs, gone_jobs, and insta_submit tables 
+    Creates the opt_jobs, dos_jobs, wav_jobs, gone_jobs, and insta_submit tables
     if any of them dont exist
   Returns:
     Nothing
@@ -479,7 +479,7 @@ def db_init(path):
 
 def get_string_from_db(cmd):
   """Executes the command and returns the first result of the query as a string
-  
+
   Args:
     cmd (str): The command to execute in the database
   Returns:
@@ -493,7 +493,7 @@ def get_string_from_db(cmd):
 
 def sprint(*args):
   """Acts like print, but prints nothing if silent is supplied by the parser
-  
+
   Args:
     args*: The arguments that would be passed into print
   Returns:
@@ -526,14 +526,14 @@ def get_subfile(machine):
   }.get(machine)
 
 def register():
-  """Adds jobs to opt_jobs, dos_jobs, and wav_jobs, and there assicated quenes. 
+  """Adds jobs to opt_jobs, dos_jobs, and wav_jobs, and there assicated quenes.
 
   This is based on the current working directory
-  
+
   ini, fin, dos, wav, and sc are reserved
-  
+
   Processes the quenes
-  
+
   Args:
     None
   Returns:
@@ -546,7 +546,7 @@ def register():
     Medium Priority TODO
       Very large function that does a LOT, testing this would be close to an integration test
   """
-  #calc_files = ["POSCAR","POTCAR","INCAR","KPOINTS",subfile] 
+  #calc_files = ["POSCAR","POTCAR","INCAR","KPOINTS",subfile]
   # neb_dirs = [re.compile(".*?[Iini]", ".*?[Fin]", ".*?[Band]")]
   # ini, fin, dos, wav, sc, are now reserved directory names. these cannot be a substring of a directory name.
   exclude_regex = re.compile(".*?(?<!^/home)((/run\d*)|(/dos)|(/sc)|(/[Ii]ni)|(/[Ff]in)|(/wav))")
@@ -615,7 +615,7 @@ def NEB_bundle_finder(dirs_lowercase):
 
 def grep_ll_out_convergence(ll_out):
   """Looks at ll_out to see if the reuqired accuracy has been met
-  
+
   Args:
     ll_out (str): A path to ll.out to check accuracy
   Returns:
@@ -629,7 +629,7 @@ def grep_ll_out_convergence(ll_out):
 # This assumes that all converged calculations do not wrap up its last run
 def determine_convergence(job_directory):
   """Returns if this job has converged, Works for all jobs, including bulk relaxition
-  
+
   Args:
     job_directory (str): A path to the job directory. NO TRAILING SLASHES
   Returns:
@@ -666,7 +666,7 @@ def determine_convergence(job_directory):
 
 def determine_box_convergence(job_directory):
   """Returns true if box relaxation completed, false otherwise
-  
+
   Args:
     job_directory (str): The directory of the job with the box convergence run
   Returns:
@@ -690,7 +690,7 @@ def determine_box_convergence(job_directory):
 # Determine if this job needs to be treated differently
 def is_isif3(job_directory):
   """Checks to see if ISIF = 3 and returns true if so.
-  
+
   Args:
     job_directory (str): The directory with the potential box relaxion job
   Returns:
@@ -707,14 +707,14 @@ def is_isif3(job_directory):
 
 def process_opt(job_directory):
   """Processes an opt job, checking to see if it has the required files, and is running
-  
+
   if clear certificate is supplied by parser removes it
-  
+
   If the job is running writes to prelimary results
 
   Updates machine last on
 
-  
+
   Args:
     job_directory (str): The directory the job can be found on
   Returns:
@@ -744,7 +744,7 @@ def process_opt(job_directory):
     return
   else:
     sprint("Found opt files")
-   
+
   if parser.values.clear_certificate and exists("convergence_certificate"):
     subprocess.call(["rm","/convergence_certificate"],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
 
@@ -782,7 +782,7 @@ def process_opt(job_directory):
 
 def check_error(job_directory):
   """Returns True if this job reported an error, false otherwise
-  
+
   Args:
     job_directory (str): The directory the job can be found on
   Returns:
@@ -791,17 +791,17 @@ def check_error(job_directory):
     None planned"""
   lloutpath = job_directory+"/ll_out"
   grepout = subprocess.call(["grep", "I\ REFUSE\ TO\ CONTINUE\ WITH\ THIS\ SICK\ JOB", lloutpath])
-  
+
   if grepout == 0:
     sprint("This job reported an error!")
     return True
-  else: 
+  else:
     return False
 
-# generate a permanent error log  
+# generate a permanent error log
 def log_error(job_directory,home): # potentially create an error buffer and write the errors all at once in the end? potentially a bad idea in case of a crash though/not sure if the speedup would be non-negligible
-  """Writes error messages in the job directory to error_log.dat. Appends 
-  
+  """Writes error messages in the job directory to error_log.dat. Appends
+
   Args:
     job_directory (str): A path to the directory that contains a job which has an error
     home (str): The home of the user
@@ -811,21 +811,19 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
     Updates error_log.dat, creating it if it dosent exist, and writes the error message, and current time
   Tests
     TODO: Medium priority
-      Simple, something not critical""" 
+      Simple, something not critical"""
   error_log = open(home+"/error_log.dat","a+")
 
   for error_message in get_error_message(job_directory):
-    #TODO: ^ Can return a string, and does not always return a list
     error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
 
-def get_error_message(job_directory): 
+def get_error_message(job_directory):
   """Gets the error message from ll_out and returns all found
   Args:
     job_directory (str): A path to the directory that contains a job which has an error
   Returns:
-    list(str): A list of error messages iff error messages were found
-
-    str: message not found iff no messages were found
+    list(str): A list of error messages found. If none were found, contains a single str
+    saying "message not found"
   Changes:
     Changes current working direcctory to job_directory
   Tests
@@ -838,15 +836,14 @@ def get_error_message(job_directory):
     if ("ERROR" in line) or ("error" in line):
       messages.append(line)
   if len(messages) == 0:
-    return "message not found!"
-    #WHY!, why not wrap this up in the same list, so the types are the same
+    messages.append("message not found!\n")
   return messages
 
 def fix_error(job_directory):
   """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
-  
+
   Then resubmits job if the error could fbe fixed
-  
+
   Args:
     job_directory (str): A path to the directory that contains a job which has an error
   Returns:
@@ -915,16 +912,21 @@ def reset_converged(home):
 
 def set_incar_tags(path, tags_dict):
   """Edits the INCAR and writes the dictionary to the INCAR
+
+  If a tag in tags_dict is not in the INCAR, writes the tag to the INCAR alongside the value
+  if a tag is in INCAR, but not in tags_dict, leavs the tag unchanged
+  If a tag in tags_dict is present in the INCAR, updates the tag to the value present in tags_dict
+
   Args:
     path (str): the path to the INCAR
-    tags_dict (dict(keys: str vals: str)): A dictionary connecting the diffrent tags of an INCAR to the values, 
+    tags_dict (dict(keys: str vals: str)): A dictionary connecting the diffrent tags of an INCAR to the values,
       keys = left hand side of the = ex
         x = y
         the key is x, while the value is y
   Returns:
     None
   Tests:
-    TODO"""
+    Complete"""
   read_incar = open(path, "r")
   lines = read_incar.readlines()
   for i in range(0,len(lines)):
@@ -935,26 +937,28 @@ def set_incar_tags(path, tags_dict):
       lines[i] = tag + "=" + new_val + "\n"
     except KeyError:
       sprint("KeyError")
-      traceback.print_exc()
+      if not parser.values.silent:
+        traceback.print_exc()
+
       continue
-  
+
   read_incar.close()
-  
+
   write_incar = open(path, "w")
   write_incar.writelines(lines)
-  
+
   more_lines = []
   for tag in tags_dict:
     val = tags_dict[tag]
     if val != None:
       more_lines.append(tag + "=" + val + "\n")
-  
+
   write_incar.writelines(more_lines)
   write_incar.close()
 
 def create_sc(job_directory):
   """Creates a SC directory setting INCAR approtately. Submits the job
-  
+
   IBRION = -1
   LCHARGE  = .TRUE.
   NSW = 0
@@ -982,13 +986,13 @@ def create_sc(job_directory):
     subprocess.call(["cp", "CONTCAR", "sc"])
   else:
     subprocess.call(["cp", "POSCAR", "sc"])
-    
+
   qsub(job_directory + "/sc")
   os.chdir(cwd)
 
 def create_dos_from_sc(job_directory):
   """Creates a properly formed dos directory from sc, settung up INCAR to be correct, submits the job
-  
+
   ICHARGE = 11
   LORBIT = 11
   Args:
@@ -1010,7 +1014,7 @@ def create_dos_from_sc(job_directory):
     subprocess.call(["cp", "CONTCAR", "../dos"])
   else:
     subprocess.call(["cp", "POSCAR", "../dos"])
-  
+
   set_incar_tags("../dos/INCAR", {
     "ICHARGE": "11",
     "LORBIT": "11"
@@ -1060,12 +1064,12 @@ def dos_is_complete(dos_dir):
 
 def process_dos(job_directory):
   """Processes a dos job and sets status correctly
-  
+
   This means that if sc or dos is complete then its status is set to 0 (complete)
   This also means that if there was an eror its status is set to 2 (error).
 
   If sc_dir has an error dos_status is set to 1 (incomplete)
-  
+
   If dos does not exist in the direcoty creates a dos directory and sets the status to -1 (running)
 
   Additonally if there is no sc creates one and sets its status to -1 (running) and sets the dos status to 1 (incomplete)
@@ -1075,7 +1079,7 @@ def process_dos(job_directory):
     None
   Changes:
     Submits dos and sc if they did not exist and submits them
-    Updates the status for dos_jobs 
+    Updates the status for dos_jobs
   Tests:
     TODO
   """
@@ -1102,7 +1106,7 @@ def process_dos(job_directory):
     elif check_error(sc_dir):
       dos_jobs[job_directory].sc_status = JobStatus.Error
       dos_jobs[job_directory].dos_status = JobStatus.Incomplete
-      
+
   else:
     sprint("no sc_dir -> create_sc")
     create_sc(job_directory)
@@ -1112,8 +1116,8 @@ def process_dos(job_directory):
 # Create a self-consistent calculation to get WAVECAR for later use
 def create_wav(job_directory):
   """Wakes a WAV direcotry, and copies INCAR, KPOINTS, POTCAR, and CO
-  NTCAR, or POSCAR if CONTCAR does not exist to this new directory 
-  
+  NTCAR, or POSCAR if CONTCAR does not exist to this new directory
+
   Sets up the INCAR to be that of a WAV calculatoron. Submits the job"""
   cwd = os.getcwd()
   os.chdir(job_directory)
@@ -1129,13 +1133,13 @@ def create_wav(job_directory):
     subprocess.call(["cp", "CONTCAR", "sc"])
   else:
     subprocess.call(["cp", "POSCAR", "sc"])
-    
+
   qsub(job_directory+"/wav")
   os.chdir(cwd)
 
 def wav_is_complete(wav_dir):
-  """Returns True if WAVECAR has not been writen to in 2 minutes or more. 
-  
+  """Returns True if WAVECAR has not been writen to in 2 minutes or more.
+
   Returns false if WAVECAR has been writen to in that secion, or WAVECAR does not exist"""
   cwd = os.getcwd()
   os.chdir(sc_dir)
@@ -1151,7 +1155,7 @@ def wav_is_complete(wav_dir):
 
 def process_wav(job_directory):
   """Proceses a wav_job and sets its status to 0 if it is complete or if check_error returns true
-  
+
   Otherwise sets status to -1"""
   sprint("process_wav " + job_directory)
 
@@ -1175,7 +1179,7 @@ def process_wav(job_directory):
 
 def trim_pos():
   """Creates a POSCAR with reduced size for WAVECAR calculation.
-   
+
      potentially Bader as well.
      This does not work across perioduc boundaries  and results are undefined if that is attempted """
   print("WARNING: This is not designed to work for molecules across periodic boundaries!!!")
@@ -1183,7 +1187,7 @@ def trim_pos():
     with open("CONTCAR") as tmpfile:
       car = tmpfile.readlines()
   else:
-    with open("POSCAR") as tmpfile: 
+    with open("POSCAR") as tmpfile:
       car = tmpfile.readlines()
   if "Cartesian" in car[6]:
     coord_sys = "Cartesian"
@@ -1205,7 +1209,7 @@ def trim_pos():
 
 def process_converged(job_directory):
   """Calls vef.pl and creates a convergence certificate
-  
+
   This would combine XCATCAR and FE if that was working"""
   sprint("optimization converged! " + job_directory)
   subprocess.call("vef.pl", stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
@@ -1222,17 +1226,17 @@ def process_converged(job_directory):
     traceback.print_exc()
   give_certificate()
   opt_jobs[job_directory].status = JobStatus.Converged # 0 -> status 0 means converged
-    
+
 def process_unconverged(job_directory):
   """Adds the final values of the job to the preliminary_results file then resbumits
-  
+
   If CONTCAR does not exist, or is of size 0, only resubmits, same if OUTCAR does not exist.
   """
   # First check if this is recorded as unconverged
   sprint("processing unconverged job at " + job_directory)
 
   opt_jobs[job_directory].status = JobStatus.Incomplete # 1 -> status 1 means unconverged
-    
+
   # is CONTCAR empty? empty file have size 0. if not empty, wrap up if job is not running
   if not exists(job_directory+"/CONTCAR") or not exists(job_directory+"/OUTCAR"):
     sprint("contcar or outcar is missing -> resubmit")
@@ -1240,7 +1244,7 @@ def process_unconverged(job_directory):
   elif(os.path.getsize(job_directory+"/CONTCAR") != 0) :
     sprint("contcar exists -> wrap up")
     wrap_up(job_directory)
-    step,force,energy = get_residueSFE(job_directory) 
+    step,force,energy = get_residueSFE(job_directory)
     add_preliminary_results(job_directory,step,force,energy)
     qsub(job_directory)
   else:
@@ -1280,17 +1284,17 @@ def combine_XDAT_FE(job_directory):
           line = line.decode("utf-8")
         except AttributeError:
           continue
-        except: 
+        except:
           traceback.print_exc()
           continue
 
         if initial:
           continue
 
-        if "Direct" in line and " 2\n" in line: 
+        if "Direct" in line and " 2\n" in line:
           cwrite = True
-          
-        if cwrite: 
+
+        if cwrite:
           cmbX.write(line)
         else:
           continue
@@ -1298,7 +1302,7 @@ def combine_XDAT_FE(job_directory):
       initial = False
       cwrite = False
       f.close()
-      
+
       # now check for fe.dat
       if os.path.isfile(os.path.join(dir,"fe.dat")) :
         with open(os.path.join(dir,"fe.dat"), "r") as f:
@@ -1311,13 +1315,13 @@ def combine_XDAT_FE(job_directory):
 
 def get_residueSFE(job_directory):
   """Currently returns a tuple of 3 zeroes
-  
+
   Goal seems to be to return the step, force, and total energy of the final step
   """
   #this function cannot be used before cmbFE can be created correctly
-  return 0,0,0  
+  return 0,0,0
 
-  os.chdir(job_directory) 
+  os.chdir(job_directory)
   cmbfepath = job_directory + "/cmbFE.dat"
   last_line = ""
   try:
@@ -1341,7 +1345,7 @@ def get_residueSFE(job_directory):
 def classify_job_dir(job_dir):
   """Returns the type of job this is based on the ending directory name.
   Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-  this would return "sc", and if it ended in /wav returns "wav". 
+  this would return "sc", and if it ended in /wav returns "wav".
   Finally if it does not match any of the following returns "opt"
   """
   # Why not make this a enum?
@@ -1363,8 +1367,8 @@ def get_opt_dir(job_dir):
   return re.compile("\/(dos|sc|wav)$").sub("", job_dir)
 
 def load_running_qsub_job(qstat_entry, is_remote=False):
-  """Loads running jobs into 
-  
+  """Loads running jobs into
+
   If there is an error deletes jobs from the quene
   """
   job_machine = 1 - machine if is_remote else machine
@@ -1374,11 +1378,11 @@ def load_running_qsub_job(qstat_entry, is_remote=False):
   job_status = JobStatus.Error if partial_job_info[4] == "Eqw" else JobStatus.Running
   full_job_info = ssh.run("qstat -j " + qstat_id, hide=True).stdout.split("\\n") if is_remote else subprocess.run(['qstat', '-j', qstat_id], capture_output=True).stdout.decode().split("\n")
   job_dir = None
-  for line in full_job_info: 
+  for line in full_job_info:
     if "workdir" in line:
       job_dir = line.split()[1]
       break
-  
+
   if job_dir == None:
     job_status = JobStatus.Error
 
@@ -1428,7 +1432,7 @@ def load_running_qsub_job(qstat_entry, is_remote=False):
 def get_submitted_jobs_qsub():
   """Gets the jobs that are in the quene for this machine, and remote machines if ssh is connected"""
   all_jobs = str(subprocess.check_output(['qstat'])).split('\\n')
-  
+
   for job in all_jobs[2:-1]:
     load_running_qsub_job(job)
 
@@ -1446,9 +1450,9 @@ def get_submitted_jobs_slurm():
     job_id = job[0]
     job_sstatus = job[1] # slurm's status code
     job_dir = job[2]
-    
+
     job_status = JobStatus.Running
-    
+
     if job_sstatus in ["BF", "CA", "F", "NF", "OOM", "TO"]:
       sprint("job id=" + job_id + ", dir=" + job_dir + " is in error")
       subprocess.call(["scancel", job_id])
@@ -1488,7 +1492,7 @@ def get_submitted_jobs():
   if machine == 0: # fri
     for job_dir in opt_jobs:
       # opt_jobs[job_dir].status = abs(opt_jobs[job_dir].status)
-       opt_jobs[job_dir].status = opt_jobs[job_dir].status 
+       opt_jobs[job_dir].status = opt_jobs[job_dir].status
        if opt_jobs[job_dir].status == JobStatus.Running:
          opt_jobs[job_dir].status = JobStatus.Incomplete
     for job_dir in dos_jobs:
@@ -1512,7 +1516,7 @@ def get_submitted_jobs():
     for job_dir in opt_jobs:
       #opt_jobs[job_dir].status = abs(opt_jobs[job_dir].status) # make all -1s into 1s
 							# Ray: why?
-      opt_jobs[job_dir].status = opt_jobs[job_dir].status 
+      opt_jobs[job_dir].status = opt_jobs[job_dir].status
       if opt_jobs[job_dir].status == JobStatus.Running:
         opt_jobs[job_dir].status = JobStatus.Incomplete
     for job_dir in dos_jobs:
@@ -1534,7 +1538,7 @@ def get_submitted_jobs():
       get_submitted_jobs_slurm()
       # Why not just have an if here, instead of having 2 blocks of code that are mostly the same
   else: # tacc
-    for job_dir in opt_jobs: 
+    for job_dir in opt_jobs:
       if opt_jobs[job_dir].status == JobStatus.Running:
         tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] = tacc_queue_sizes[opt_jobs[job_dir].last_on - 2] + 1
         if opt_jobs[job_dir].last_on == machine:
@@ -1557,7 +1561,7 @@ def get_submitted_jobs():
 
 def wrap_up(job_directory):
   """Wraps up a job by using vfin.pl. Places the results in the lowest non-negative "run" directory possible
-  
+
   This means that if the job directory already had  run0, run1, run2, the results will be in run3
 
   Additionally if the job directory has run0, run3, run4, places the results in run5, and not run3
@@ -1576,7 +1580,7 @@ def wrap_up(job_directory):
   if( len(runs) == 0 ):
     if parser.values.test :
       sprint("this job would be wrapped up")
-    else : 
+    else :
       subprocess.call(['/usr/local/vtstscripts/vfin.pl','run0'],stdout=subprocess.DEVNULL,stderr=subprocess.STDOUT)
       subprocess.call(['mv', 'll_out', 'run0'])
   else:
@@ -1625,7 +1629,7 @@ def optimizer_review(job_directory):
       time.sleep(10)
       #combine_XDAT_FE(job_directory)
       sprint("combine_XDAT_FE disabled due to bugs")
-  cmbFE = open('cmbFE.dat','r')       
+  cmbFE = open('cmbFE.dat','r')
   cmbFE_lines = cmbFE.readlines()
   if len(cmbFE_lines) < 200:
     return None
@@ -1679,7 +1683,7 @@ def optimizer_review(job_directory):
               INCAR.close()
               return None
 
-      # If using damped molecular dynamics and force has been consistenly smaller than 0.2 eV/angstrom, change back to CG        
+      # If using damped molecular dynamics and force has been consistenly smaller than 0.2 eV/angstrom, change back to CG
       elif '3' in str(INCAR_line.split('=')[1]):
         for i in range(1,10):
           try:
@@ -1714,10 +1718,10 @@ def qsub(job_directory):
 
   If the parser says this is a test does nothing, but print debug information
 
-  If the length of the sub_quene is longer than the 
-  limit supplied by the parser, riases a JobLimitError 
+  If the length of the sub_quene is longer than the
+  limit supplied by the parser, riases a JobLimitError
   if contunue_past_limit is not passed in by the parser
-  
+
   """
 
   global hit_limit
@@ -1729,7 +1733,7 @@ def qsub(job_directory):
     os.chdir(job_directory)
     update_job_name(subfile)
     sub_queue.append(job_directory)
-    
+
     # sprint("sub_queue is: " + str(sub_queue))
 
     if len(sub_queue) >= parser.values.limit:
@@ -1740,10 +1744,10 @@ def qsub(job_directory):
 
 def switch_subfile(job_dir, new_sub):
   """Copies the subfile into new_sub and updates the job_name of new_sub
-  
+
   if there is not a subfile does nothing"""
   os.chdir(job_dir)
-  
+
   if not exists(subfile):
     return
 
@@ -1755,19 +1759,19 @@ def switch_subfile(job_dir, new_sub):
 
 def add_to_insta_submit(job_dir, machine):
   """ Adds the jobs in job_dir into insta_submit
-  
+
   Does not commit changes to the DB
   """
   db.execute("insert into insta_submit values (?, ?)", (job_dir, machine))
 
 def set_status_for_newly_submitted_job(job_dir, job_machine):
   """Sets the job status to that of special jobs that no longer need to be optoomised
-  
-  
+
+
    job_dir - the directory that the job is found in
 
    job_machine - the machine the job is running on
-  
+
   """
   job_type = classify_job_dir(job_dir)
   opt_dir = get_opt_dir(job_dir)
@@ -1788,7 +1792,7 @@ def set_status_for_newly_submitted_job(job_dir, job_machine):
 
 def submit_queue():
   """Sumbits the jobs to the quene of the machine
-  
+
   When submitting to fri-halifax attempts to balance files based on how many jobs are in the quene
 
   When sumbitting to tacc  tires to derermine if it will hit the limit then sumbits the jobs
@@ -1796,7 +1800,7 @@ def submit_queue():
   sprint("starting queue submit")
   if machine < 2: # fri-halifax
     other_subfile = get_subfile(1 - machine)
-    
+
     this_machine_job_count = len(str(subprocess.run(["xqstat"], capture_output=True).stdout).split('\n'))
     other_machine_job_count = int(ssh.run("xqstat | wc -l", hide=True).stdout) if not no_ssh else 0
     diff_in_size = this_machine_job_count - other_machine_job_count
@@ -1821,9 +1825,9 @@ def submit_queue():
       new_loc = home + automagic_remote_dir + job_dir
       scp_put_dir(job_dir, new_loc)
       ssh.run("cd " + new_loc + " && qsub " + other_subfile)
-      set_status_for_newly_submitted_job(job_dir, 1 - machine)  
+      set_status_for_newly_submitted_job(job_dir, 1 - machine)
       sub_queue_index = sub_queue_index + 1
-        
+
     while sub_queue_index < num_to_sub:
       job_dir = sub_queue[sub_queue_index]
       os.chdir(job_dir)
@@ -1842,11 +1846,11 @@ def submit_queue():
     total_free_spaces = 0
     num_will_sub = [0,0,0]
     will_hit_limit = False
-    
+
     for i in range(0, 3):
       num_can_sub[i] = tacc_queue_maxes[i] - tacc_queue_sizes[i]
       total_free_spaces = total_free_spaces + num_can_sub[i]
-      
+
     if not parser.values.balance:
       total_free_spaces = num_can_sub[0]
       num_can_sub[1] = 0
@@ -1855,15 +1859,15 @@ def submit_queue():
     if total_free_spaces < num_to_sub:
       num_will_sub = num_can_sub
       will_hit_limit = True
-    else:  
+    else:
       for i in range(0, 3):
         if total_free_spaces == 0:
           continue
         num_will_sub[i] = round(num_can_sub[i] * num_to_sub/total_free_spaces)
         num_to_sub = num_to_sub - num_will_sub[i]
         total_free_spaces = total_free_spaces - num_can_sub[i]
-        
-      
+
+
     sub_queue_index = 0
     for i in range(0, 3):
       for j in range(0, num_will_sub[i]):
@@ -1879,9 +1883,9 @@ def submit_queue():
 
 def update_job_name(subfile_name):
   """Replaces lines that contain -N and -J with new lines
-  
-  -N is repalced with "#$ -N AM_"<current_working_directory with / replaced by _ 
-  
+
+  -N is repalced with "#$ -N AM_"<current_working_directory with / replaced by _
+
   -J is repalced with "#SBATCH -J AM_"<current_working_directory with / replaced by _ """
   script = open(subfile_name,"r")
   script_lines = script.readlines()
@@ -1906,7 +1910,7 @@ def give_certificate():
 
 def check_certificate():
   """Returns true if there is a convergence_certificate in the current direcoty
-  
+
   TODO Is this where the script is stored, or where the script is called for
   Can test to find out"""
   if os.path.exists("./convergence_certificate"):
@@ -1915,7 +1919,7 @@ def check_certificate():
 
 def process_queue():
   """ Processes the jobs in each of the quenes, updates opt jobs if the job was no longer found in the correct directory
-  
+
   Args:
   Returns:
   Changes:"""
@@ -1925,7 +1929,7 @@ def process_queue():
       process_opt(job_dir)
     else:
       print("job is no longer found at ", job_dir)
-      db.execute('update opt_jobs set status = ?, last_on = ? where rowid = ?', (JobStatus.NotFound.value, opt_jobs[job_dir].last_on, old_entry)) 
+      db.execute('update opt_jobs set status = ?, last_on = ? where rowid = ?', (JobStatus.NotFound.value, opt_jobs[job_dir].last_on, old_entry))
 
   for job_dir in dos_queue:
     process_dos(job_dir)
@@ -1937,7 +1941,7 @@ def read_job_statuses():
   """Reads the opt_jobs, dos_jobs, and wav_jobs fields from the database and stores them in memory"""
   for job in db.execute('select * from opt_jobs'):
     opt_jobs[job[0]] = opt_job(job[1], job[2], job[3])
-    
+
   for job in db.execute('select * from dos_jobs'):
     opt_id = job[0]
     opt_dir = get_string_from_db('select dir from opt_jobs where rowid = ' + str(opt_id))
@@ -1951,11 +1955,11 @@ def read_job_statuses():
 def write_job_statuses():
   """Does diffrent things depending on the type of job
 
-  opt_jobs  
+  opt_jobs
   if the job was not in the database  adds it to the database.
   However if the job was in the database, updates the job
 
-  dos_jobs 
+  dos_jobs
   If the job does not have an opt_id  in opt_jobs terminates the program and closes ssh connections
   If it does have an entry updates the entry
   If its entry is of length 0 inserts the job into the database
@@ -1972,7 +1976,7 @@ def write_job_statuses():
   for job_dir in opt_jobs:
     old_entry = get_string_from_db('select rowid from opt_jobs where dir = "' + job_dir + '"')
     if len(old_entry) > 0:
-      db.execute('update opt_jobs set status = ?, last_on = ? where rowid = ?', (opt_jobs[job_dir].status.value, opt_jobs[job_dir].last_on, old_entry)) 
+      db.execute('update opt_jobs set status = ?, last_on = ? where rowid = ?', (opt_jobs[job_dir].status.value, opt_jobs[job_dir].last_on, old_entry))
     else:
       db.execute('insert into opt_jobs values (?, ?, ?, ?)', (job_dir, opt_jobs[job_dir].status.value, opt_jobs[job_dir].home_machine, opt_jobs[job_dir].last_on))
 
@@ -1983,7 +1987,7 @@ def write_job_statuses():
       sprint("no opt_id??")
       automagic_exit()
     elif len(old_entry) > 0:
-      db.execute('update dos_jobs set sc_status = ?, dos_status = ?, sc_last_on = ?, dos_last_on = ? where rowid = ?', (dos_jobs[job_dir].sc_status.value, dos_jobs[job_dir].dos_status.value, dos_jobs[job_dir].sc_last_on, dos_jobs[job_dir].dos_last_on, old_entry)) 
+      db.execute('update dos_jobs set sc_status = ?, dos_status = ?, sc_last_on = ?, dos_last_on = ? where rowid = ?', (dos_jobs[job_dir].sc_status.value, dos_jobs[job_dir].dos_status.value, dos_jobs[job_dir].sc_last_on, dos_jobs[job_dir].dos_last_on, old_entry))
     else:
       db.execute('insert into dos_jobs values (?, ?, ?, ?, ?)', (opt_id, dos_jobs[job_dir].sc_status.value, dos_jobs[job_dir].dos_status.value, dos_jobs[job_dir].sc_last_on, dos_jobs[job_dir].dos_last_on))
   db.connection.commit()
@@ -1996,7 +2000,7 @@ def write_job_statuses():
       sprint("no opt_id??")
       automagic_exit()
     elif len(old_entry) > 0:
-      db.execute('update wav_jobs set wav_status = ?, wav_last_on = ? where rowid = ?', (wav_jobs[job_dir].wav_status.value, wav_jobs[job_dir].wav_last_on, old_entry)) 
+      db.execute('update wav_jobs set wav_status = ?, wav_last_on = ? where rowid = ?', (wav_jobs[job_dir].wav_status.value, wav_jobs[job_dir].wav_last_on, old_entry))
     else:
       db.execute('insert into wav_jobs values (?, ?, ?)', (opt_id, wav_jobs[job_dir].wav_status.value, wav_jobs[job_dir].wav_last_on))
 
@@ -2004,7 +2008,7 @@ def write_job_statuses():
   sprint("automagician.db updated")
 
 def write_plain_text_db():
-  """Prints out the text DB to standard output"""
+  """Prints out the text DB to the {users home directoy}/opt_jobs"""
   sprint("writting out opt_jobs, ")
   f_opt_jobs = open(home+'/opt_jobs',"w")
   f_opt_jobs.write("status | home machine | last on | job name ")
@@ -2016,7 +2020,7 @@ def write_plain_text_db():
 
 def db_check():
   """Checks to see if executing the same query 5 times and deleting the duplicates is the same as executing the query once
-  
+
   Does not return any values
 
   WHY DOES THIS EXIST
@@ -2037,21 +2041,21 @@ def db_check():
   # print(i)
   # print()
   # print("Loop once")
-  
+
   listOfDir_once = [];
   db = sqlite3.connect(path).cursor()
   opt_jobs = db.execute("select * from 'opt_jobs' order by dir")
   for e in opt_jobs:
     listOfDir_once.append(e)
   listOfDir_once.sort()
-  
+
   if listOfDir_once == no_dups_mult:
     print("The lists are the same")
   else:
     print("The lists are NOT the same")
-  
-  
-    
+
+
+
 def reset_job_status():
   """Sets the status of optimization jobs to 1 which means unconverged"""
   # opt_jobs = db.execute("select * from 'opt_jobs' order by dir")
@@ -2060,7 +2064,7 @@ def reset_job_status():
   db.execute("update opt_jobs set status = ?", (JobStatus.Converged.value,))
   db.connection.commit()
   print("Jobs have been updated")
-  
+
 def gone_job_check():
   """Checks optomization jobs and turns them into gone jobs if it does not exist
 
@@ -2082,7 +2086,7 @@ def gone_job_check():
     count += 1
   print("COUNT OF OPT_JOBS: ", count)
   #for direc in db.execute('select dir from opt_jobs where status = 1'):
-  for direc in db.execute('select * from opt_jobs where status = ?',(JobStatus.Incomplete.value)):
+  for direc in db.execute('select * from opt_jobs where status = ?',(JobStatus.Incomplete.value,)):
     if parser.values.db_debug_flag:
       if not exists(direc[0]):
         sprint(direc[0] + " no longer exists!")
@@ -2092,18 +2096,18 @@ def gone_job_check():
         sprint(direc[0] + " no longer exists!")
         print("direc is ", direc)
         gone_jobs_list.append([direc[0],direc[1],direc[2],direc[3]])
-      
+
   for j in gone_jobs_list:
     print("Job to delete: " + j[0])
     #db.execute("insert into gone_jobs values (?)", (j,))
     db.execute('insert into gone_jobs values (?, ?, ?, ?)', (j[0],j[1],j[2],j[3]))
     db.execute("delete from opt_jobs where dir = (?)", (j[0],))
     del opt_jobs[j[0]]
-  
+
   gone_jobs = db.execute("select * from gone_jobs")
   count = 0
   db.connection.commit()
-  
+
 
 def main():
   """The entry point of the program
@@ -2124,13 +2128,13 @@ def main():
       Resets jobs status
       Registers all jobs in the directoy
       Processes unconverged optomizaton jobs
-    
+
     submits jobs to the quene
     Updates the database
     Removes the lockfile
     Closes ssh / scp connections
 
-  
+
 
   What does it take in as input
     Nothing
@@ -2168,7 +2172,7 @@ def main():
     read_job_statuses()
     get_submitted_jobs()
     subfile = get_subfile(machine)
-    preliminary_results = open(home+'/preliminary_results.dat','w') 
+    preliminary_results = open(home+'/preliminary_results.dat','w')
     gone_job_check()
     try:
       if parser.values.reset_converged: reset_converged(home)

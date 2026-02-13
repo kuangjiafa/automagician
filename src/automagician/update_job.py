@@ -2,36 +2,19 @@ import datetime
 import logging
 import os
 import re
-import shlex
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, List, Optional, TextIO
+from typing import Dict, List, Literal, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + shlex.quote(remote) + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
+# try:
+#     from automagician.classes import SshScp
+# except ImportError:
+#     pass
 
 
 def add_preliminary_results(
@@ -57,7 +40,18 @@ def log_error(job_directory: str, home: str) -> None:
       None
     Changes:
       Updates error_log.dat, creating it if it dosent exist, and writes the error message, and current time
-    """
+    Tests
+      TODO: Medium priority
+        Simple, something not critical"""
+    # error_log = open(os.path.join(home, "error_log.dat"), "a+")
+    # potentially create an error buffer and write the errors all at once in the end? potentially a bad idea in case of a crash though/not sure if the speedup would be non-negligible
+    # for error_message in get_error_message(job_directory):
+    #     error_log.write(
+    #         f"{str(datetime.datetime.now())} {job_directory} {error_message} \n"
+    #     )
+    # error_log.close()
+
+    # TODO: verify that this change doesn't
     with open(os.path.join(home, "error_log.dat"), "a+") as error_log:
         for error_message in get_error_message(job_directory):
             error_log.write(
@@ -102,7 +96,6 @@ def fix_error(
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
-            import automagician.finish_job as finish_job
             finish_job.wrap_up(job_directory)
             return True
         elif (
@@ -239,27 +232,6 @@ def switch_subfile(
         update_job_name(new_sub)
     finally:
         os.chdir(cwd)
-
-
-def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
-    """Returns the type of job this is based on the ending directory name.
-
-    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-    this would return "sc", and if it ended in /wav returns "wav".
-    Finally if it does not match any of the following returns "opt"
-    """
-    is_dos_regex = re.compile(r".*?(?<!^/home)\/dos$")
-    is_sc_regex = re.compile(r".*?(?<!^/home)\/sc$")
-    is_wav_regex = re.compile(r".*?(?<!^/home)\/wav$")
-
-    if is_dos_regex.match(str(os.path.normpath(job_dir))):
-        return "dos"
-    elif is_sc_regex.match(str(os.path.normpath(job_dir))):
-        return "sc"
-    elif is_wav_regex.match(str(os.path.normpath(job_dir))):
-        return "wav"
-    else:
-        return "opt"
 
 
 def set_status_for_newly_submitted_job(

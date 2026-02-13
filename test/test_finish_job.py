@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+from unittest.mock import MagicMock, patch
 
 import automagician.constants as constants
 
@@ -13,7 +14,8 @@ from automagician.finish_job import (
 )
 
 
-def test_wrap_up_no_previous_attempts(tmp_path):
+@patch("automagician.finish_job.subprocess.run")
+def test_wrap_up_no_previous_attempts(mock_run, tmp_path):
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -25,7 +27,8 @@ def test_wrap_up_no_previous_attempts(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_one_previous_attempt(tmp_path):
+@patch("automagician.finish_job.subprocess.run")
+def test_wrap_up_one_previous_attempt(mock_run, tmp_path):
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -38,7 +41,8 @@ def test_wrap_up_one_previous_attempt(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_previous_attempts_deleted(tmp_path):
+@patch("automagician.finish_job.subprocess.run")
+def test_wrap_up_previous_attempts_deleted(mock_run, tmp_path):
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -51,7 +55,8 @@ def test_wrap_up_previous_attempts_deleted(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_double_digits(tmp_path):
+@patch("automagician.finish_job.subprocess.run")
+def test_wrap_up_double_digits(mock_run, tmp_path):
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -65,7 +70,8 @@ def test_wrap_up_double_digits(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_error(tmp_path):
+@patch("automagician.finish_job.subprocess.run")
+def test_wrap_up_error(mock_run, tmp_path):
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)

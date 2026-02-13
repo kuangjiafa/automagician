@@ -3,14 +3,13 @@ import os
 import pytest
 
 import automagician.main
-import automagician.constants as constants
 
 
 def test_automagician_lockfile_present():
-    lockfile_path = constants.LOCK_FILE
-    if not os.path.exists(constants.LOCK_DIR):
-        os.makedirs(constants.LOCK_DIR, mode=0o700)
-
+    lockfile_dir = "/tmp/automagician/"
+    if not os.path.exists(lockfile_dir):
+        os.makedirs(lockfile_dir)
+    lockfile_path = lockfile_dir + os.environ["USER"] + "-lock"
     with open(lockfile_path, "w") as lockfile:
         lockfile.write("MockLockfile")
 

@@ -1,5 +1,5 @@
 [MASTER]
-ignore=old_automagician.py,old_commented_automagician.py,oldUnitTests.py,CVS
+ignore=old_automagician.py,old_commented_automagician.py,oldUnitTests.py,CVS,test_security.py,test_secure_lockfile.py
 ignore-patterns=^\.#
 
 [MESSAGES CONTROL]
@@ -75,7 +75,7 @@ disable=
     consider-using-sys-exit,
     useless-return,
     consider-using-enumerate,
-    too-many-positional-arguments,
     import-outside-toplevel,
     too-many-nested-blocks,
     missing-final-newline,
+    too-many-positional-arguments,

@@ -22,6 +22,8 @@ def wrap_up(job_directory: str) -> None:
     Args:
         job_directory: The path of the job directory to wrap up.
     """
+    import automagician.update_job as update_job
+
     logger = logging.getLogger()
     logger.info("wrapping up job")
     # first find name
@@ -76,10 +78,9 @@ def give_certificate(job_directory: str) -> int:
              0 if certificate was created
     """
     try:
-        with open(
+        open(
             os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-        ):
-            pass
+        )
         return 0
     except FileExistsError:
         return 1

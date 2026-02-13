@@ -17,9 +17,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pylint pytest
-        pip install -e ".[dev, remote]"
+        pip install pylint
     - name: Analysing the code with pylint
       run: |
-        export PYTHONPATH=src
-        pylint src test
+        pylint $(git ls-files '*.py')
