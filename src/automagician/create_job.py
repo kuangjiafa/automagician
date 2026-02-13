@@ -6,7 +6,6 @@ import shutil
 from typing import List
 
 import automagician.machine as machine_file
-import automagician.update_job as update_job
 from automagician.classes import JobLimitError, Machine
 
 
@@ -45,6 +44,8 @@ def add_to_sub_queue(
     if hit_limit:
         return True
     subfile = machine_file.get_subfile(machine)
+    import automagician.update_job as update_job
+
     update_job.update_job_name(os.path.join(job_directory, subfile))
     sub_queue.append(job_directory)
 
@@ -97,6 +98,8 @@ def create_dos_from_sc(
     else:
         shutil.copy(os.path.join(job_directory, "POSCAR"), dos_dir)
 
+    import automagician.update_job as update_job
+
     update_job.set_incar_tags(
         os.path.join(dos_dir, "INCAR"), {"ICHARGE": "11", "LORBIT": "11"}
     )
@@ -142,6 +145,8 @@ def create_wav(
     wav_dir = os.path.normpath(os.path.join(job_directory, "../wav"))
     # copy over the inputs
     copy_inputs(subfile, job_directory, wav_dir)
+    import automagician.update_job as update_job
+
     update_job.set_incar_tags(
         os.path.join(wav_dir, "INCAR"), {"IBRION": "-1", "LWAVE": ".TRUE.", "NSW": "0"}
     )
@@ -181,6 +186,8 @@ def create_sc(
 
     # copy kpoints, incar, potcar, subfile over
     copy_inputs(subfile, job_directory, sc_dir)
+
+    import automagician.update_job as update_job
 
     update_job.set_incar_tags(
         os.path.join(sc_dir, "INCAR"), {"IBRION": "-1", "LCHARGE": ".TRUE.", "NSW": "0"}

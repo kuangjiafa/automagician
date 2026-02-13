@@ -80,7 +80,7 @@ class Database:
         Args:
             cwd: The directory to remove"""
         logger = logging.getLogger()
-        self.db.execute("delete from opt_jobs where dir = '" + cwd + "'")
+        self.db.execute("delete from opt_jobs where dir = ?", (cwd,))
         self.db.connection.commit()
         logger.info("%s is deleted from opt_jobs", cwd)
 

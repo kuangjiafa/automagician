@@ -83,6 +83,8 @@ def fix_error(
 
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
+    import automagician.finish_job as finish_job
+
     for error_message in error_messages:
         if "ZBRENT" in error_message:
             contcar_path = os.path.join(job_directory, "CONTCAR")
