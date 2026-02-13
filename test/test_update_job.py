@@ -4,11 +4,11 @@ import shutil
 from pathlib import PosixPath
 
 from automagician.classes import DosJob, JobStatus, OptJob, WavJob
+from automagician.small_functions import get_opt_dir
 from automagician.update_job import (
     add_preliminary_results,
     fix_error,
     get_error_message,
-    get_opt_dir,
     log_error,
     set_status_for_newly_submitted_job,
     update_job_name,
