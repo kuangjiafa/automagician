@@ -44,10 +44,7 @@ def get_machine_number() -> Machine:
 
 
 def ssh_scp_init(
-        machine: Machine,
-        home_dir: str,
-        balance: bool,
-        logger: logging.Logger
+    machine: Machine, home_dir: str, balance: bool, logger: logging.Logger
 ) -> SSHConfig:
     """Initializes ssh and sets the no_ssh variable appropriately
 
@@ -71,21 +68,21 @@ def ssh_scp_init(
         if no_fabric:
             logger.warning("you need fabric for ssh to work")
             return SSHConfig(config="NoSSH")
-        else:
-            try:
-                ssh = fabric.Connection(
-                    user=os.environ["USER"],
-                    host=hostname,
-                    connect_kwargs={
-                        "key_filename": home_dir + "/.ssh/automagician_id_rsa"
-                    },
-                    config=fabric.config.Config(overrides={"warn": True}),
-                )
-                scp = fabric.transfer.Transfer(ssh)
-                ssh.run("hostname")
-            except Exception:
-                logger.warning("you need fri-halifax keys for ssh to work")
-                return SSHConfig(config="NoSSH")
+    else:
+        return SSHConfig(config="NoSSH")
+
+    try:
+        ssh = fabric.Connection(
+            user=os.environ["USER"],
+            host=hostname,
+            connect_kwargs={"key_filename": home_dir + "/.ssh/automagician_id_rsa"},
+            config=fabric.config.Config(overrides={"warn": True}),
+        )
+        scp = fabric.transfer.Transfer(ssh)
+        ssh.run("hostname")
+    except Exception:
+        logger.warning("you need fri-halifax keys for ssh to work")
+        return SSHConfig(config="NoSSH")
     return SSHConfig(config=SshScp(ssh=ssh, scp=scp))
 
 
@@ -134,7 +131,7 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
 
     if machine < 2 and ssh_config.config != "NoSSH":
         if not ssh_config.config.ssh.run(
-                "test -d " + constants.LOCK_DIR, warn=True, hide=True
+            "test -d " + constants.LOCK_DIR, warn=True, hide=True
         ).ok:
             ssh_config.config.ssh.run("mkdir -p " + constants.LOCK_DIR)
 
@@ -204,9 +201,9 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     cwd = os.getcwd()
     os.chdir(local)
     for f in (
-            subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                    .stdout.decode("utf-8")
-                    .split("\n")
+        subprocess.run(["find", ".", "-type", "f"], capture_output=True)
+        .stdout.decode("utf-8")
+        .split("\n")
     ):
         if len(f) < 1:
             continue
@@ -214,6 +211,30 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
         ssh_config.ssh.run("mkdir -p " + dirname)  # type: ignore
         ssh_config.scp.put(local + f[1:], dirname)  # type: ignore
     os.chdir(cwd)
+
+
+if not no_fabric:
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+        """Puts files inside the remote directory to the local directory
+
+        Args:
+        remote (str): the directory on the remote machine to transfer files from
+        local (str): the directory on the local machine to transfer files to
+        """
+        # We assume ssh_scp is SshScp here, but we use object to match signature
+        # This is a bit of a hack to please mypy without importing SshScp globally if not available
+        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
+        for f in real_ssh_scp.ssh.run(
+            "cd " + remote + "; find . -type f | cut -c 2-"
+        ).stdout.split("\n"):
+            if len(f) < 1:
+                continue
+            real_ssh_scp.scp.get(remote + f, local + f)
+else:
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+        pass
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:

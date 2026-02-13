@@ -1,3 +1,4 @@
+# pylint: disable=all
 import os
 from unittest.mock import MagicMock, call, patch
 

@@ -1,16 +1,14 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Literal
+from typing import Literal, Any
 
 try:
-    from fabric import Connection, Transfer
-
+    from fabric import Connection, Transfer  # type: ignore[import-not-found]
 
     @dataclass
     class SshScp:
         ssh: Connection
         scp: Transfer
-
 
     @dataclass
     class SSHConfig:
@@ -22,7 +20,12 @@ except ImportError:
     Transfer = None
 
     @dataclass
-    class SSHConfig:
+    class SshScp: # type: ignore[no-redef]
+        ssh: Any = None
+        scp: Any = None
+
+    @dataclass
+    class SSHConfig:  # type: ignore[no-redef]
         config: Literal["NoSSH"]
 
 

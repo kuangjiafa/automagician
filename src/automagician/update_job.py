@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code,cyclic-import
 import datetime
 import logging
 import os
@@ -8,38 +10,15 @@ from os.path import exists
 from typing import Dict, Optional, TextIO
 
 import automagician.constants as constants
-import automagician.finish_job as finish_job
-import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
-
-try:
-    from automagician.classes import SshScp
-
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-                "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def add_preliminary_results(
-        job_directory: str,
-        step: int,
-        force: float,
-        energy: float,
-        preliminary_results: TextIO,
+    job_directory: str,
+    step: int,
+    force: float,
+    energy: float,
+    preliminary_results: TextIO,
 ) -> None:
     """Adds the job directory, step number, force, and energy to the file in preliminary_results"""
     preliminary_results.write(str(job_directory) + "\n")
@@ -96,7 +75,7 @@ def get_error_message(job_directory: str) -> list[str]:
 
 
 def fix_error(
-        job_directory: str,
+    job_directory: str,
 ) -> bool:
     """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
     Args:
@@ -106,6 +85,8 @@ def fix_error(
       True if a fix was attempted,
     Changes:
       Resubmits the job iff a fix was attempted"""
+    import automagician.finish_job as finish_job
+
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
     for error_message in error_messages:
@@ -116,8 +97,8 @@ def fix_error(
             finish_job.wrap_up(job_directory)
             return True
         elif (
-                "number of potentials on File POTCAR incompatible with number"
-                in error_message
+            "number of potentials on File POTCAR incompatible with number"
+            in error_message
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
@@ -216,10 +197,10 @@ def get_opt_dir(job_dir: str) -> str:
 
 
 def switch_subfile(
-        job_dir: str,
-        new_sub: str,
-        subfile: str,
-        machine: Machine,
+    job_dir: str,
+    new_sub: str,
+    subfile: str,
+    machine: Machine,
 ) -> None:
     """Copies the subfile into new_sub and updates the job_name of new_sub
 
@@ -246,12 +227,12 @@ def switch_subfile(
 
 
 def set_status_for_newly_submitted_job(
-        job_dir: str,
-        job_machine: Machine,
-        dos_jobs: Dict[str, DosJob],
-        wav_jobs: Dict[str, WavJob],
-        opt_jobs: Dict[str, OptJob],
-        error: bool,
+    job_dir: str,
+    job_machine: Machine,
+    dos_jobs: Dict[str, DosJob],
+    wav_jobs: Dict[str, WavJob],
+    opt_jobs: Dict[str, OptJob],
+    error: bool,
 ) -> None:
     """Sets the job status to that of special jobs that no longer need to be optoomised
 
@@ -261,6 +242,8 @@ def set_status_for_newly_submitted_job(
     job_machine - the machine the job is running on
 
     """
+    import automagician.process_job as process_job
+
     job_type = process_job.classify_job_dir(job_dir)
     opt_dir = get_opt_dir(job_dir)
 
