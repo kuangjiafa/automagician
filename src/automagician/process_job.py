@@ -676,11 +676,12 @@ def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
     this would return "sc", and if it ended in /wav returns "wav".
     Finally if it does not match any of the following returns "opt"
     """
-    if IS_DOS_REGEX.match(str(os.path.normpath(job_dir))):
+    normalized = str(os.path.normpath(job_dir))
+    if IS_DOS_REGEX.match(normalized):
         return "dos"
-    elif IS_SC_REGEX.match(str(os.path.normpath(job_dir))):
+    elif IS_SC_REGEX.match(normalized):
         return "sc"
-    elif IS_WAV_REGEX.match(str(os.path.normpath(job_dir))):
+    elif IS_WAV_REGEX.match(normalized):
         return "wav"
     else:
         return "opt"
