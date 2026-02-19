@@ -5,10 +5,12 @@ from typing import Literal
 try:
     from fabric import Connection, Transfer
 
+
     @dataclass
     class SshScp:
         ssh: Connection
         scp: Transfer
+
 
     @dataclass
     class SSHConfig:

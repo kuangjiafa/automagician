@@ -164,13 +164,19 @@ def test_write_plain_text_db_with_multiple_opt(tmp_path):
 
     database = Database(database_path)
     opt_jobs = {
-        "/tmp/job1": OptJob(JobStatus.NOT_FOUND, Machine.FRI, Machine.FRONTERA_TACC),
-        "/tmp/job2": OptJob(JobStatus.CONVERGED, Machine.HALIFAX, Machine.LS6_TACC),
+        "/tmp/job1": OptJob(
+            JobStatus.NOT_FOUND, Machine.FRI, Machine.FRONTERA_TACC
+        ),
+        "/tmp/job2": OptJob(
+            JobStatus.CONVERGED, Machine.HALIFAX, Machine.LS6_TACC
+        ),
         "/tmp/job3": OptJob(
             JobStatus.ERROR, Machine.STAMPEDE2_TACC, Machine.STAMPEDE2_TACC
         ),
         "/tmp/job4": OptJob(JobStatus.RUNNING, Machine.LS6_TACC, Machine.HALIFAX),
-        "/tmp/job5": OptJob(JobStatus.INCOMPLETE, Machine.FRONTERA_TACC, Machine.FRI),
+        "/tmp/job5": OptJob(
+            JobStatus.INCOMPLETE, Machine.FRONTERA_TACC, Machine.FRI
+        ),
     }
     database.write_job_statuses(opt_jobs, {}, {})
 
@@ -196,13 +202,19 @@ def test_write_plain_text_db_with_multiple_opt_dos_wav(tmp_path):
 
     database = Database(database_path)
     opt_jobs = {
-        "/tmp/job1": OptJob(JobStatus.NOT_FOUND, Machine.FRI, Machine.FRONTERA_TACC),
-        "/tmp/job2": OptJob(JobStatus.CONVERGED, Machine.HALIFAX, Machine.LS6_TACC),
+        "/tmp/job1": OptJob(
+            JobStatus.NOT_FOUND, Machine.FRI, Machine.FRONTERA_TACC
+        ),
+        "/tmp/job2": OptJob(
+            JobStatus.CONVERGED, Machine.HALIFAX, Machine.LS6_TACC
+        ),
         "/tmp/job3": OptJob(
             JobStatus.ERROR, Machine.STAMPEDE2_TACC, Machine.STAMPEDE2_TACC
         ),
         "/tmp/job4": OptJob(JobStatus.RUNNING, Machine.LS6_TACC, Machine.HALIFAX),
-        "/tmp/job5": OptJob(JobStatus.INCOMPLETE, Machine.FRONTERA_TACC, Machine.FRI),
+        "/tmp/job5": OptJob(
+            JobStatus.INCOMPLETE, Machine.FRONTERA_TACC, Machine.FRI
+        ),
     }
     dos_jobs = {
         "/tmp/job1": DosJob(
@@ -553,7 +565,9 @@ def test_write_job_status_dos_and_wav(tmp_path):
         ),
     }
     wav_jobs = {
-        "/home/jw53959/opt_job_1/wav": WavJob(opt_id_1, JobStatus.ERROR, Machine.FRI),
+        "/home/jw53959/opt_job_1/wav": WavJob(
+            opt_id_1, JobStatus.ERROR, Machine.FRI
+        ),
         "/home/jw53959/opt_job_2/wav": WavJob(
             opt_id_2, JobStatus.NOT_FOUND, Machine.HALIFAX
         ),
@@ -586,7 +600,9 @@ def test_write_job_status_dos_and_wav(tmp_path):
     }
 
     assert wav_jobs == {
-        "/home/jw53959/opt_job_1/wav": WavJob(opt_id_1, JobStatus.ERROR, Machine.FRI),
+        "/home/jw53959/opt_job_1/wav": WavJob(
+            opt_id_1, JobStatus.ERROR, Machine.FRI
+        ),
         "/home/jw53959/opt_job_2/wav": WavJob(
             opt_id_2, JobStatus.NOT_FOUND, Machine.HALIFAX
         ),
@@ -619,7 +635,9 @@ def test_write_job_status_dos_and_wav(tmp_path):
     }
 
     assert database.get_wav_jobs() == {
-        "/home/jw53959/opt_job_1/wav": WavJob(opt_id_1, JobStatus.ERROR, Machine.FRI),
+        "/home/jw53959/opt_job_1/wav": WavJob(
+            opt_id_1, JobStatus.ERROR, Machine.FRI
+        ),
         "/home/jw53959/opt_job_2/wav": WavJob(
             opt_id_2, JobStatus.NOT_FOUND, Machine.HALIFAX
         ),
@@ -799,7 +817,9 @@ def test_write_job_status_update_all(tmp_path):
     }
 
     assert database.get_wav_jobs() == {
-        "/home/jw53959/opt_job_1/wav": WavJob(opt_id_1, JobStatus.RUNNING, Machine.FRI),
+        "/home/jw53959/opt_job_1/wav": WavJob(
+            opt_id_1, JobStatus.RUNNING, Machine.FRI
+        ),
         "/home/jw53959/opt_job_2/wav": wav_job_2,
     }
 
@@ -855,11 +875,15 @@ def test_add_opt_to_db_add(tmp_path):
 
     database.add_opt_job_to_db(opt_job_1, "/tmp/opt_job_1", True)
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX)
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX
+        )
     }
     database.add_opt_job_to_db(opt_job_2, "/tmp/opt_job_2", True)
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX),
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX
+        ),
         "/tmp/opt_job_2": OptJob(
             JobStatus.CONVERGED, Machine.STAMPEDE2_TACC, Machine.FRONTERA_TACC
         ),
@@ -877,7 +901,9 @@ def test_add_opt_to_db_update(tmp_path):
     database.add_opt_job_to_db(opt_job_1, "/tmp/opt_job_1")
     database.add_opt_job_to_db(opt_job_2, "/tmp/opt_job_2", True)
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX),
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX
+        ),
         "/tmp/opt_job_2": OptJob(
             JobStatus.CONVERGED, Machine.STAMPEDE2_TACC, Machine.FRONTERA_TACC
         ),
@@ -885,8 +911,12 @@ def test_add_opt_to_db_update(tmp_path):
     opt_job_2 = OptJob(JobStatus.NOT_FOUND, Machine.FRI, Machine.LS6_TACC)
     database.add_opt_job_to_db(opt_job_2, "/tmp/opt_job_2", True)
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX),
-        "/tmp/opt_job_2": OptJob(JobStatus.NOT_FOUND, Machine.FRI, Machine.LS6_TACC),
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX
+        ),
+        "/tmp/opt_job_2": OptJob(
+            JobStatus.NOT_FOUND, Machine.FRI, Machine.LS6_TACC
+        ),
     }
 
     assert database.get_dos_jobs() == {}
@@ -943,7 +973,9 @@ def test_add_dos_to_db_opt_dir_specified_valid(tmp_path):
     assert dos_job_1.opt_id == -1
 
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX)
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.HALIFAX
+        )
     }
     dos_jobs = database.get_dos_jobs()
     assert len(dos_jobs) == 1
@@ -1021,7 +1053,9 @@ def test_add_dos_to_db_opt_id_specified_add(tmp_path):
     dos_id = dos_job_1.opt_id
 
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.HALIFAX, Machine.FRI)
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.HALIFAX, Machine.FRI
+        )
     }
     assert database.get_dos_jobs() == {
         "/tmp/opt_job_1/dos": DosJob(
@@ -1132,7 +1166,9 @@ def test_add_wav_to_db_opt_dir_specified_valid(tmp_path):
 def test_add_wav_to_db_opt_dir_specified_add_opt_id(tmp_path):
     database_path = os.path.join(tmp_path, "test_db")
     database = Database(database_path)
-    opt_job_1 = OptJob(JobStatus.CONVERGED, Machine.FRONTERA_TACC, Machine.HALIFAX)
+    opt_job_1 = OptJob(
+        JobStatus.CONVERGED, Machine.FRONTERA_TACC, Machine.HALIFAX
+    )
     database.add_opt_job_to_db(opt_job_1, "/tmp/opt_job_1", True)
     wav_job_1 = WavJob(-1, JobStatus.INCOMPLETE, Machine.LS6_TACC)
 
@@ -1169,7 +1205,9 @@ def test_add_wav_to_db_opt_id_specified_add(tmp_path):
     assert wav_job_1.opt_id == opt_id
 
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.FRI)
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.FRI
+        )
     }
     assert database.get_wav_jobs() == {
         "/tmp/opt_job_1/wav": WavJob(
@@ -1195,7 +1233,9 @@ def test_add_wav_to_db_opt_id_specified_update(tmp_path):
     assert wav_job_2.opt_id == opt_id
 
     assert database.get_opt_jobs() == {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.FRI)
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.FRI
+        )
     }
     assert database.get_wav_jobs() == {
         "/tmp/opt_job_1/wav": WavJob(opt_id, JobStatus.CONVERGED, Machine.FRI)
@@ -1295,7 +1335,9 @@ def test_reset_job_status(tmp_path):
     database = Database(database_path)
 
     opt_jobs = {
-        "/tmp/opt_job_1": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.LS6_TACC),
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.CONVERGED, Machine.FRI, Machine.LS6_TACC
+        ),
         "/tmp/opt_job_2": OptJob(
             JobStatus.ERROR, Machine.HALIFAX, Machine.FRONTERA_TACC
         ),
@@ -1314,7 +1356,9 @@ def test_reset_job_status(tmp_path):
     database.reset_job_status()
 
     opt_jobs = {
-        "/tmp/opt_job_1": OptJob(JobStatus.INCOMPLETE, Machine.FRI, Machine.LS6_TACC),
+        "/tmp/opt_job_1": OptJob(
+            JobStatus.INCOMPLETE, Machine.FRI, Machine.LS6_TACC
+        ),
         "/tmp/opt_job_2": OptJob(
             JobStatus.INCOMPLETE, Machine.HALIFAX, Machine.FRONTERA_TACC
         ),
@@ -1324,7 +1368,9 @@ def test_reset_job_status(tmp_path):
         "/tmp/opt_job_4": OptJob(
             JobStatus.INCOMPLETE, Machine.FRONTERA_TACC, Machine.HALIFAX
         ),
-        "/tmp/opt_job_5": OptJob(JobStatus.INCOMPLETE, Machine.LS6_TACC, Machine.FRI),
+        "/tmp/opt_job_5": OptJob(
+            JobStatus.INCOMPLETE, Machine.LS6_TACC, Machine.FRI
+        ),
     }
 
 
