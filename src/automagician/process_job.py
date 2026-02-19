@@ -23,6 +23,7 @@ from automagician.classes import (
     OptJob,
     SSHConfig,
     WavJob,
+    SshScp,
 )
 
 if TYPE_CHECKING:
@@ -683,7 +684,7 @@ def get_submitted_jobs(
 
 
 def gone_job_check(
-    database: Database,
+    database: "automagician.database.Database",
     opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -777,11 +778,11 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            elif isinstance(ssh_config.config, SshScp):
+                ssh = ssh_config.config.ssh
+                other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -821,7 +822,6 @@ def submit_queue(
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                     )
-                import automagician.update_job as update_job
 
                 update_job.set_status_for_newly_submitted_job(
                     job_dir,
@@ -888,7 +888,9 @@ def submit_queue(
         os.chdir(cwd)
 
 
-def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
+def add_to_insta_submit(
+    job_dir: str, machine: str, database: "automagician.database.Database"
+) -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB

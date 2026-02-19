@@ -7,7 +7,7 @@ import re
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, Optional, TextIO
+from typing import Dict, List, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
@@ -49,12 +49,12 @@ def log_error(job_directory: str, home: str) -> None:
             )
 
 
-def get_error_message(job_directory: str) -> list[str]:
+def get_error_message(job_directory: str) -> List[str]:
     """Gets the error message from ll_out and returns all found
     Args:
       job_directory (str): A path to the directory that contains a job which has an error
     Returns:
-      list(str): A list of error messages found. If none were found, contains a single str
+      List[str]: A list of error messages found. If none were found, contains a single str
       saying "message not found"
     Changes:
       Changes current working direcctory to job_directory"""
