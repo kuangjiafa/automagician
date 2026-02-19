@@ -1,5 +1,3 @@
-# pylint: disable=duplicate-code,cyclic-import
-# pylint: disable=duplicate-code,cyclic-import
 import logging
 import os
 import shutil
@@ -7,18 +5,6 @@ import subprocess
 import time
 
 import automagician.constants as constants
-def optimizer_review(job_directory: str) -> None:
-    """Returns None
-     --- What I think it wants to do below ---
-    Goal seems to be to combine XDATCAR and FE
-
-    Changes INCAR by adjusting INBARIAR to the most correct option
-    
-    TODO: determine if this method is still relevant in current usage.
-    """
-    logger = logging.getLogger()
-    logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
-    return None
 
 
 def wrap_up(job_directory: str) -> None:
@@ -74,7 +60,6 @@ def wrap_up(job_directory: str) -> None:
         logger.warning("combine_XDAT_FE disabled due to bugs")
 
     import automagician.update_job as update_job
-
     update_job.optimizer_review(job_directory)
     os.chdir(cwd)
 
@@ -90,21 +75,12 @@ def give_certificate(job_directory: str) -> int:
              0 if certificate was created
     """
     try:
-        with open(
+        open(
             os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-        ):
-            pass
+        )
         return 0
     except FileExistsError:
         return 1
-    # if os.path.isfile(constants.CONVERGENCE_CERTIFICATE_NAME):
-    #     continue
-    # else:
-    # create convergence certificate
-    #    with open(
-    #        os.path.join(job_directory, constants.CONVERGENCE_CERTIFICATE_NAME), "x"
-    #    ) as cert:
-    #        pass
 
 
 def sc_is_complete(sc_dir: str) -> bool:
