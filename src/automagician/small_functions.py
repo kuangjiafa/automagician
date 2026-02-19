@@ -20,7 +20,11 @@ try:
         for f in ssh_scp.ssh.run(
                 "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
         ).stdout.split("\n"):
-            if len(f) < 1:
+            if not f:
+                continue
+            # Skip any path that contains '..' as a path segment to prevent traversal,
+            # but allow filenames where '..' appears within a segment (e.g. 'foo..bar').
+            if any(part == ".." for part in f.split("/")):
                 continue
             ssh_scp.scp.get(remote + f, local + f)
 
