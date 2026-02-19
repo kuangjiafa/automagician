@@ -20,7 +20,7 @@ try:
         for f in ssh_scp.ssh.run(
                 "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
         ).stdout.split("\n"):
-            if len(f) < 1:
+            if len(f) < 1 or ".." in f:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
 
