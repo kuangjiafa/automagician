@@ -9,7 +9,6 @@ from automagician.update_job import (
     add_preliminary_results,
     fix_error,
     get_error_message,
-    get_opt_dir,
     log_error,
     update_job_name,
 )

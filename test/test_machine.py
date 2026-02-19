@@ -1,6 +1,8 @@
+import logging
+
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import *
-import logging
+
 
 def test_is_oden():
     assert is_oden(Machine.FRI)
@@ -19,28 +21,26 @@ def test_is_tacc():
     assert is_tacc(Machine.LS6_TACC)
     assert is_tacc(Machine.STAMPEDE2_TACC)
 
+
 def test_ssh_scp_init():
     logger = logging.Logger("test")
     ssh_config = ssh_scp_init(
-        machine = get_machine_number(),
-        home_dir = os.environ["HOME"],
-        balance = True,
-        logger = logger
+        machine=get_machine_number(),
+        home_dir=os.environ["HOME"],
+        balance=True,
+        logger=logger,
     )
 
     no_balance = ssh_scp_init(
         machine=get_machine_number(),
         home_dir=os.environ["HOME"],
         balance=False,
-        logger=logger
+        logger=logger,
     )
 
     no_fabric = True
     wo_fabric = ssh_scp_init(
-        machine=Machine.FRI,
-        home_dir=os.environ["HOME"],
-        balance=True,
-        logger=logger
+        machine=Machine.FRI, home_dir=os.environ["HOME"], balance=True, logger=logger
     )
 
     assert isinstance(ssh_config, SSHConfig)
@@ -48,4 +48,3 @@ def test_ssh_scp_init():
     assert isinstance(wo_fabric, SSHConfig)
     assert no_balance.config == "NoSSH"
     assert wo_fabric.config == "NoSSH"
-

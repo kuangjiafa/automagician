@@ -1,3 +1,5 @@
+# pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code,cyclic-import
 import datetime
 import logging
 import os
@@ -13,11 +15,11 @@ from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 
 def add_preliminary_results(
-        job_directory: str,
-        step: int,
-        force: float,
-        energy: float,
-        preliminary_results: TextIO,
+    job_directory: str,
+    step: int,
+    force: float,
+    energy: float,
+    preliminary_results: TextIO,
 ) -> None:
     """Adds the job directory, step number, force, and energy to the file in preliminary_results"""
     preliminary_results.write(str(job_directory) + "\n")
@@ -38,15 +40,6 @@ def log_error(job_directory: str, home: str) -> None:
     Tests
       TODO: Medium priority
         Simple, something not critical"""
-    # error_log = open(os.path.join(home, "error_log.dat"), "a+")
-    # potentially create an error buffer and write the errors all at once in the end? potentially a bad idea in case of a crash though/not sure if the speedup would be non-negligible
-    # for error_message in get_error_message(job_directory):
-    #     error_log.write(
-    #         f"{str(datetime.datetime.now())} {job_directory} {error_message} \n"
-    #     )
-    # error_log.close()
-
-    # TODO: verify that this change doesn't
     with open(os.path.join(home, "error_log.dat"), "a+") as error_log:
         for error_message in get_error_message(job_directory):
             error_log.write(
@@ -74,7 +67,7 @@ def get_error_message(job_directory: str) -> list[str]:
 
 
 def fix_error(
-        job_directory: str,
+    job_directory: str,
 ) -> bool:
     """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
     Args:
@@ -84,48 +77,43 @@ def fix_error(
       True if a fix was attempted,
     Changes:
       Resubmits the job iff a fix was attempted"""
+    import automagician.finish_job as finish_job
+
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
+    import automagician.finish_job as finish_job
+
     for error_message in error_messages:
         if "ZBRENT" in error_message:
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
+            import automagician.finish_job as finish_job
+
             finish_job.wrap_up(job_directory)
             return True
         elif (
-                "number of potentials on File POTCAR incompatible with number"
-                in error_message
+            "number of potentials on File POTCAR incompatible with number"
+            in error_message
         ):
             cwd = os.getcwd()
             os.chdir(job_directory)
-            subprocess.call(
-                [constants.SORT_POS_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            subprocess.call(
-                [constants.SO_GET_SOFT_PBE_PATH],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.STDOUT,
-            )
-            os.chdir(cwd)
+            try:
+                subprocess.call(
+                    [constants.SORT_POS_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+                subprocess.call(
+                    [constants.SO_GET_SOFT_PBE_PATH],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.STDOUT,
+                )
+            finally:
+                os.chdir(cwd)
             return True
     logger.info(f"a fix was not attempted for the job at {job_directory}")
     return False
-
-
-# if CG isn't working, use Damped molecular dynamics
-def optimizer_review(job_directory: str) -> None:
-    """Returns None
-     --- What I think it wants to do below ---
-    Goal seems to be to combine XDATCAR and FE
-
-    Changes INCAR by adjusting INBARIAR to the most correct option
-    """
-    logger = logging.getLogger()
-    logger.warning("because bugs related to cmbFE, optimizer review is disabled.")
-    return None
 
 
 def update_job_name(subfile: str) -> None:
@@ -137,11 +125,10 @@ def update_job_name(subfile: str) -> None:
     script_lines = script.readlines()
     script.close()
     with open(subfile, "w") as script:
+        cwd_str = os.getcwd().replace("/", "_")
         for line in script_lines:
             if "-J" in line or "--job-name=" in line:
-                script.write(
-                    "#SBATCH -J " + "AM_" + os.getcwd().replace("/", "_") + "\n"
-                )
+                script.write("#SBATCH -J " + "AM_" + cwd_str + "\n")
             else:
                 script.write(line)
 
@@ -188,16 +175,11 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     write_incar.close()
 
 
-def get_opt_dir(job_dir: str) -> str:
-    """Replaces the dos sc and wav's that could be in a directory with nothing  to turn them into opt jobs"""
-    return re.compile(r"\/(dos|sc|wav)$").sub("", str(job_dir))
-
-
 def switch_subfile(
-        job_dir: str,
-        new_sub: str,
-        subfile: str,
-        machine: Machine,
+    job_dir: str,
+    new_sub: str,
+    subfile: str,
+    machine: Machine,
 ) -> None:
     """Copies the subfile into new_sub and updates the job_name of new_sub
 
@@ -207,19 +189,23 @@ def switch_subfile(
         new_sub:
         subfile: The name of the subfile
         machine:"""
-    os.chdir(job_dir)
+    cwd = os.getcwd()
+    try:
+        os.chdir(job_dir)
 
-    if not exists(subfile):
-        return
+        if not exists(subfile):
+            return
 
-    default_subfile_path = (
-        constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
-        if machine < 2
-        else constants.DEFAULT_SUBFILE_PATH_TACC
-    )
+        default_subfile_path = (
+            constants.DEFAULT_SUBFILE_PATH_FRI_HALIFAX
+            if machine < 2
+            else constants.DEFAULT_SUBFILE_PATH_TACC
+        )
 
-    subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
-    # os.remove(old_sub)
-    update_job_name(new_sub)
+        subprocess.call(["cp", default_subfile_path + "/" + new_sub, new_sub])
+        # os.remove(old_sub)
+        update_job_name(new_sub)
+    finally:
+        os.chdir(cwd)
 
 

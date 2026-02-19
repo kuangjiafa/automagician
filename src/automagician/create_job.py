@@ -1,20 +1,21 @@
+# pylint: disable=duplicate-code,cyclic-import
+# pylint: disable=duplicate-code
 import logging
 import os
 import shutil
 from typing import List
 
 import automagician.machine as machine_file
-import automagician.update_job as update_job
 from automagician.classes import JobLimitError, Machine
 
 
 def add_to_sub_queue(
-        job_directory: str,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        machine: Machine,
-        hit_limit: bool,
+    job_directory: str,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    machine: Machine,
+    hit_limit: bool,
 ) -> bool:
     """Adds job_directoy to sub_queue. and updates the job name
 
@@ -43,6 +44,8 @@ def add_to_sub_queue(
     if hit_limit:
         return True
     subfile = machine_file.get_subfile(machine)
+    import automagician.update_job as update_job
+
     update_job.update_job_name(os.path.join(job_directory, subfile))
     sub_queue.append(job_directory)
 
@@ -55,12 +58,12 @@ def add_to_sub_queue(
 
 
 def create_dos_from_sc(
-        job_directory: str,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        machine: Machine,
-        hit_limit: bool,
+    job_directory: str,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    machine: Machine,
+    hit_limit: bool,
 ) -> None:
     """Creates a properly formed dos directory from sc, setting up INCAR to be
     correct, and then submits the job
@@ -95,6 +98,8 @@ def create_dos_from_sc(
     else:
         shutil.copy(os.path.join(job_directory, "POSCAR"), dos_dir)
 
+    import automagician.update_job as update_job
+
     update_job.set_incar_tags(
         os.path.join(dos_dir, "INCAR"), {"ICHARGE": "11", "LORBIT": "11"}
     )
@@ -109,9 +114,7 @@ def create_dos_from_sc(
     )
 
 
-def copy_inputs(subfile,
-                job_directory: str,
-                directory: str) -> None:
+def copy_inputs(subfile, job_directory: str, directory: str) -> None:
     os.mkdir(directory)
     shutil.copy(os.path.join(job_directory, subfile), directory)
     shutil.copy(os.path.join(job_directory, "KPOINTS"), directory)
@@ -124,14 +127,15 @@ def copy_inputs(subfile,
     else:
         shutil.copy(os.path.join(job_directory, "POSCAR"), directory)
 
+
 # Create a self-consistent calculation to get WAVECAR for later use
 def create_wav(
-        job_directory: str,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        machine: Machine,
-        hit_limit: bool,
+    job_directory: str,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    machine: Machine,
+    hit_limit: bool,
 ) -> None:
     """Wakes a WAV directory, and copies INCAR, KPOINTS, POTCAR, and
     CONTCAR, or POSCAR if CONTCAR does not exist to this new directory
@@ -141,6 +145,8 @@ def create_wav(
     wav_dir = os.path.normpath(os.path.join(job_directory, "../wav"))
     # copy over the inputs
     copy_inputs(subfile, job_directory, wav_dir)
+    import automagician.update_job as update_job
+
     update_job.set_incar_tags(
         os.path.join(wav_dir, "INCAR"), {"IBRION": "-1", "LWAVE": ".TRUE.", "NSW": "0"}
     )
@@ -156,12 +162,12 @@ def create_wav(
 
 
 def create_sc(
-        job_directory: str,
-        continue_past_limit: bool,
-        limit: int,
-        sub_queue: List[str],
-        machine: Machine,
-        hit_limit: bool,
+    job_directory: str,
+    continue_past_limit: bool,
+    limit: int,
+    sub_queue: List[str],
+    machine: Machine,
+    hit_limit: bool,
 ) -> None:
     """Creates an SC directory and sets INCAR. Submits the job
 
@@ -180,6 +186,8 @@ def create_sc(
 
     # copy kpoints, incar, potcar, subfile over
     copy_inputs(subfile, job_directory, sc_dir)
+
+    import automagician.update_job as update_job
 
     update_job.set_incar_tags(
         os.path.join(sc_dir, "INCAR"), {"IBRION": "-1", "LCHARGE": ".TRUE.", "NSW": "0"}

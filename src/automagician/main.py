@@ -15,7 +15,6 @@ import automagician.small_functions as small_functions
 from automagician.classes import JobLimitError, JobStatus
 from automagician.database import Database
 
-
 # def constants_check(is_silent: bool, is_verbose: bool) -> logging.Logger:
 #  """Checks the existence of files required, such as a working subfile am.sub
 #  """
@@ -272,10 +271,10 @@ def main_wrapper(args: argparse.Namespace) -> None:
             if args.process:
                 logger.info("Processing all unconverged optimization jobs")
                 for direc in database.db.execute(
-                        "select dir from opt_jobs where status = ?",
-                        str(JobStatus.INCOMPLETE.value),
+                    "select dir from opt_jobs where status = ?",
+                    str(JobStatus.INCOMPLETE.value),
                 ):
-                    logger.info("inspecting recorded job: ", direc[0])
+                    logger.info(f"inspecting recorded job: {direc[0]}")
                     if args.db_debug_flag:
                         continue
                     else:
@@ -335,7 +334,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
             machine_file.automagic_exit(machine, ssh_config)
     except Exception:
         if (
-                sys.exc_info()[0] is not None and sys.exc_info()[0].__name__ == "SystemExit"  # type: ignore
+            sys.exc_info()[0] is not None and sys.exc_info()[0].__name__ == "SystemExit"  # type: ignore
         ):
             exit()
         logger.error(
