@@ -1,11 +1,14 @@
 import os
 import shutil
+from unittest import mock
 
 from automagician.classes import DosJob, JobStatus, OptJob, SSHConfig, WavJob
 from automagician.register import exclude_regex, process_queue, register
 
 
-def test_process_queue_nothing(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_queue_nothing(mock_call, mock_run, tmp_path):
     opt_queue = []
     dos_queue = []
     wav_queue = []
@@ -36,7 +39,19 @@ def test_process_queue_nothing(tmp_path):
     assert sub_queue == []
 
 
-def test_process_queue_opt_unconverged_dos_wav(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_queue_opt_unconverged_dos_wav(mock_call, mock_run, tmp_path):
+    def mock_vfin_side_effect(*args, **kwargs):
+        if args:
+            cmd = args[0]
+            if len(cmd) > 1 and "run" in cmd[1]:
+                 run_dir_name = cmd[1]
+                 if not os.path.exists(run_dir_name):
+                     os.mkdir(run_dir_name)
+        return mock.DEFAULT
+    mock_run.side_effect = mock_vfin_side_effect
+
     opt_job_1 = OptJob(JobStatus.INCOMPLETE, 0, 0)
     dos_job_1 = DosJob(-1, JobStatus.INCOMPLETE, JobStatus.INCOMPLETE, 0, 0)
     wav_job_1 = WavJob(-1, JobStatus.INCOMPLETE, 0)
@@ -86,7 +101,9 @@ def test_process_queue_opt_unconverged_dos_wav(tmp_path):
     assert wav_jobs == {opt_job_path: WavJob(-1, JobStatus.INCOMPLETE, 0)}
 
 
-def test_register_no_jobs(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_no_jobs(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -97,28 +114,42 @@ def test_register_no_jobs(tmp_path):
     sub_queue = []
     home_directory = os.path.join(tmp_path, "fake_home")
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_jobs(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_jobs(mock_call, mock_run, tmp_path):
+    def mock_vfin_side_effect(*args, **kwargs):
+        if args:
+            cmd = args[0]
+            if len(cmd) > 1 and "run" in cmd[1]:
+                 run_dir_name = cmd[1]
+                 if not os.path.exists(run_dir_name):
+                     os.mkdir(run_dir_name)
+        return mock.DEFAULT
+    mock_run.side_effect = mock_vfin_side_effect
+
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -132,28 +163,32 @@ def test_register_jobs(tmp_path):
     shutil.copytree("test/test_files/h2", opt_job_1)
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == [opt_job_1]
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.INCOMPLETE, 0, 0)}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_jobs_converged(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_jobs_converged(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -167,28 +202,32 @@ def test_register_jobs_converged(tmp_path):
     shutil.copytree("test/test_files/h2_completed_run", opt_job_1)
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.CONVERGED, 0, 0)}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_empty_note(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_empty_note(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -204,28 +243,32 @@ def test_register_empty_note(tmp_path):
         pass
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.CONVERGED, 0, 0)}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_dos_note(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_dos_note(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -241,21 +284,23 @@ def test_register_dos_note(tmp_path):
         f.write("dos\n")
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == [os.path.normpath(os.path.join(opt_job_1, "../sc"))]
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.CONVERGED, 0, 0)}
     assert dos_jobs == {
@@ -264,7 +309,9 @@ def test_register_dos_note(tmp_path):
     assert wav_jobs == {}
 
 
-def test_register_wav_note(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_wav_note(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -280,28 +327,32 @@ def test_register_wav_note(tmp_path):
         f.write("wav\n")
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == [os.path.normpath(os.path.join(opt_job_1, "../wav"))]
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.CONVERGED, 0, 0)}
     assert dos_jobs == {}
     assert wav_jobs == {opt_job_1: WavJob(-1, JobStatus.RUNNING, 0)}
 
 
-def test_register_dos_and_wav_note(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_dos_and_wav_note(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -318,28 +369,32 @@ def test_register_dos_and_wav_note(tmp_path):
         f.write("dos\n")
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == [os.path.normpath(os.path.join(opt_job_1, "../wav"))]
     assert opt_jobs == {opt_job_1: OptJob(JobStatus.CONVERGED, 0, 0)}
     assert dos_jobs == {}
     assert wav_jobs == {opt_job_1: WavJob(-1, JobStatus.RUNNING, 0)}
 
 
-def test_register_exclude_note(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_exclude_note(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -356,28 +411,32 @@ def test_register_exclude_note(tmp_path):
     os.mkdir(os.path.join(opt_job_1, "dos"))
     os.mkdir(os.path.join(opt_job_1, "wav"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_neb(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_neb(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -393,28 +452,32 @@ def test_register_neb(tmp_path):
     os.mkdir(os.path.join(opt_job_1, "ini"))
     os.mkdir(os.path.join(opt_job_1, "fin"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {}
     assert dos_jobs == {}
     assert wav_jobs == {}
 
 
-def test_register_neb_captalized(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_register_neb_captalized(mock_call, mock_run, tmp_path):
     cwd = os.getcwd()
     opt_jobs = {}
     dos_jobs = {}
@@ -430,21 +493,23 @@ def test_register_neb_captalized(tmp_path):
     os.mkdir(os.path.join(opt_job_1, "INI"))
     os.mkdir(os.path.join(opt_job_1, "FIN"))
     os.chdir(tmp_path)
-    register(
-        opt_jobs,
-        dos_jobs,
-        wav_jobs,
-        0,
-        False,
-        home_directory,
-        config,
-        preliminary_results,
-        False,
-        1000,
-        sub_queue,
-        False,
-    )
-    os.chdir(cwd)
+    try:
+        register(
+            opt_jobs,
+            dos_jobs,
+            wav_jobs,
+            0,
+            False,
+            home_directory,
+            config,
+            preliminary_results,
+            False,
+            1000,
+            sub_queue,
+            False,
+        )
+    finally:
+        os.chdir(cwd)
     assert sub_queue == []
     assert opt_jobs == {}
     assert dos_jobs == {}

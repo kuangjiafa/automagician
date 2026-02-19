@@ -1,6 +1,7 @@
 import os
 import shutil
 import time
+from unittest import mock
 
 import automagician.constants as constants
 from automagician.finish_job import (
@@ -11,8 +12,22 @@ from automagician.finish_job import (
     wrap_up,
 )
 
+def mock_vfin_side_effect(*args, **kwargs):
+    # args[0] is the command list, e.g. ['vfin.pl', 'run0']
+    # If called as positional argument.
+    # subprocess.run(args, ...) -> args is the first arg.
+    if args:
+        cmd = args[0]
+        if len(cmd) > 1 and "run" in cmd[1]:
+             run_dir_name = cmd[1]
+             # Check if directory exists, if not create it
+             if not os.path.exists(run_dir_name):
+                 os.mkdir(run_dir_name)
+    return mock.DEFAULT
 
-def test_wrap_up_no_previous_attempts(tmp_path):
+@mock.patch("subprocess.run")
+def test_wrap_up_no_previous_attempts(mock_run, tmp_path):
+    mock_run.side_effect = mock_vfin_side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -24,7 +39,9 @@ def test_wrap_up_no_previous_attempts(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_one_previous_attempt(tmp_path):
+@mock.patch("subprocess.run")
+def test_wrap_up_one_previous_attempt(mock_run, tmp_path):
+    mock_run.side_effect = mock_vfin_side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -37,7 +54,9 @@ def test_wrap_up_one_previous_attempt(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_previous_attempts_deleted(tmp_path):
+@mock.patch("subprocess.run")
+def test_wrap_up_previous_attempts_deleted(mock_run, tmp_path):
+    mock_run.side_effect = mock_vfin_side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -50,7 +69,9 @@ def test_wrap_up_previous_attempts_deleted(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_double_digits(tmp_path):
+@mock.patch("subprocess.run")
+def test_wrap_up_double_digits(mock_run, tmp_path):
+    mock_run.side_effect = mock_vfin_side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
@@ -64,7 +85,9 @@ def test_wrap_up_double_digits(tmp_path):
     assert os.path.isfile(os.path.join(run_dir, "ll_out"))
 
 
-def test_wrap_up_error(tmp_path):
+@mock.patch("subprocess.run")
+def test_wrap_up_error(mock_run, tmp_path):
+    mock_run.side_effect = mock_vfin_side_effect
     old_cwd = os.getcwd()
     job_path = os.path.join(tmp_path, "job")
     shutil.copytree("test/test_files/h2_completed_run", job_path)

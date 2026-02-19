@@ -3,6 +3,7 @@ import os
 import pathlib
 import shutil
 import time
+from unittest import mock
 
 import pytest
 
@@ -151,7 +152,9 @@ def test_process_converged(tmp_path):
     assert os.path.exists(os.path.join(tmp_path, "convergence_certificate"))
 
 
-def test_process_unconverged_no_files(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_unconverged_no_files(mock_call, mock_run, tmp_path):
     shutil.copy("test/test_files/h2_completed_run/fri.sub", tmp_path)
     opt_jobs = {}
     mock_job = OptJob(JobStatus.INCOMPLETE, 0, 0)
@@ -169,7 +172,9 @@ def test_process_unconverged_no_files(tmp_path):
     assert not os.path.exists(os.path.join(tmp_path, "run0"))
 
 
-def test_process_unconverged_NO_OUTCAR(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_unconverged_NO_OUTCAR(mock_call, mock_run, tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
     os.remove(os.path.join(job_path, "OUTCAR"))
@@ -189,7 +194,9 @@ def test_process_unconverged_NO_OUTCAR(tmp_path):
     assert not os.path.exists(os.path.join(job_path, "run0"))
 
 
-def test_process_unconverged_NO_CONTCAR(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_unconverged_NO_CONTCAR(mock_call, mock_run, tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
     os.remove(os.path.join(job_path, "CONTCAR"))
@@ -209,7 +216,19 @@ def test_process_unconverged_NO_CONTCAR(tmp_path):
     assert not os.path.exists(os.path.join(job_path, "run0"))
 
 
-def test_process_unconverged_files_present(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_unconverged_files_present(mock_call, mock_run, tmp_path):
+    def mock_vfin_side_effect(*args, **kwargs):
+        if args:
+            cmd = args[0]
+            if len(cmd) > 1 and "run" in cmd[1]:
+                 run_dir_name = cmd[1]
+                 if not os.path.exists(run_dir_name):
+                     os.mkdir(run_dir_name)
+        return mock.DEFAULT
+    mock_run.side_effect = mock_vfin_side_effect
+
     job_path = os.path.join(tmp_path, "job_path")
     shutil.copytree("test/test_files/h2_completed_run", job_path)
     opt_jobs = {}
@@ -228,7 +247,8 @@ def test_process_unconverged_files_present(tmp_path):
     assert os.path.isdir(os.path.join(job_path, "run0"))
 
 
-def test_process_opt_no_files(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_no_files(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     os.mkdir(job_dir)
@@ -256,7 +276,8 @@ def test_process_opt_no_files(tmp_path):
         assert f.read() == ""
 
 
-def test_process_opt_completed_h2_running(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_completed_h2_running(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/h2_completed_run", job_dir)
@@ -286,7 +307,8 @@ def test_process_opt_completed_h2_running(tmp_path):
         assert file_as_str == f"{job_dir}\n     0     0.0     0.0\n"
 
 
-def test_process_opt_completed_h2_incomplete(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_completed_h2_incomplete(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/h2_completed_run", job_dir)
@@ -318,7 +340,8 @@ def test_process_opt_completed_h2_incomplete(tmp_path):
         assert file_as_str == ""
 
 
-def test_process_opt_completed_h2_incomplete_remove_certificate(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_completed_h2_incomplete_remove_certificate(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/h2", job_dir)
@@ -351,7 +374,8 @@ def test_process_opt_completed_h2_incomplete_remove_certificate(tmp_path):
         assert file_as_str == ""
 
 
-def test_process_opt_completed_h2_incomplete_missing_entry(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_completed_h2_incomplete_missing_entry(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/h2", job_dir)
@@ -381,7 +405,8 @@ def test_process_opt_completed_h2_incomplete_missing_entry(tmp_path):
         assert file_as_str == ""
 
 
-def test_process_opt_completed_h2_incomplete_missing_ll_out(tmp_path):
+@mock.patch("subprocess.call")
+def test_process_opt_completed_h2_incomplete_missing_ll_out(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/h2", job_dir)
@@ -413,7 +438,23 @@ def test_process_opt_completed_h2_incomplete_missing_ll_out(tmp_path):
         assert file_as_str == ""
 
 
-def test_process_opt_failed_u_job(tmp_path):
+@mock.patch("subprocess.run")
+@mock.patch("subprocess.call")
+def test_process_opt_failed_u_job(mock_call, mock_run, tmp_path):
+    def mock_vfin_side_effect(*args, **kwargs):
+        if args:
+            cmd = args[0]
+            if len(cmd) > 1 and "run" in cmd[1]:
+                 run_dir_name = cmd[1]
+                 if not os.path.exists(run_dir_name):
+                     os.mkdir(run_dir_name)
+                 # Simulate vfin.pl moving files
+                 for filename in ["CONTCAR", "OUTCAR"]:
+                     if os.path.exists(filename):
+                         shutil.move(filename, os.path.join(run_dir_name, filename))
+        return mock.DEFAULT
+    mock_run.side_effect = mock_vfin_side_effect
+
     job_dir = os.path.join(tmp_path, "job_dir")
     home_dir = os.path.join(tmp_path, "home_dir")
     shutil.copytree("test/test_files/failed_u_run", job_dir)
@@ -444,14 +485,16 @@ def test_process_opt_failed_u_job(tmp_path):
         assert file_as_str == ""
 
 
-def test_determine_convergence_converged_h2(tmp_path):
+@mock.patch("subprocess.call")
+def test_determine_convergence_converged_h2(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2_completed_run", job_dir)
     converged = determine_convergence(job_dir)
     assert converged is True
 
 
-def test_determine_convergence_uconverged_convergence_certificate(tmp_path):
+@mock.patch("subprocess.call")
+def test_determine_convergence_uconverged_convergence_certificate(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2", job_dir)
     with open(os.path.join(job_dir, "convergence_certificate"), "w"):
@@ -460,14 +503,16 @@ def test_determine_convergence_uconverged_convergence_certificate(tmp_path):
     assert converged is True
 
 
-def test_determine_convergence_uconverged_no_contcar(tmp_path):
+@mock.patch("subprocess.call")
+def test_determine_convergence_uconverged_no_contcar(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2", job_dir)
     converged = determine_convergence(job_dir)
     assert converged is False
 
 
-def test_determine_convergence_uconverged_contcar(tmp_path):
+@mock.patch("subprocess.call")
+def test_determine_convergence_uconverged_contcar(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2", job_dir)
     with open(os.path.join(job_dir, "ll_out"), "w"):
@@ -478,11 +523,16 @@ def test_determine_convergence_uconverged_contcar(tmp_path):
     assert converged is False
 
 
-def test_determine_convergence_converged_h2_isif_3(tmp_path):
+@mock.patch("subprocess.call")
+def test_determine_convergence_converged_h2_isif_3(mock_call, tmp_path):
     job_dir = os.path.join(tmp_path, "job_dir")
     shutil.copytree("test/test_files/h2_completed_run", job_dir)
     with open(os.path.join(job_dir, "INCAR"), "a+") as f:
         f.write("ISIF = 3")
+    # create fe.dat since vef.pl is mocked
+    with open(os.path.join(job_dir, "fe.dat"), "w") as f:
+        f.write("box relaxation not finished\n")
+        f.write("another line\n")
     converged = determine_convergence(job_dir)
     assert converged is False
 
