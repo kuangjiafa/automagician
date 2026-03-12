@@ -42,9 +42,6 @@ if TYPE_CHECKING:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
 
-except ImportError:
-    pass
-
 
 def process_opt(
     job_directory: str,
