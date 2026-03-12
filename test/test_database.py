@@ -1,4 +1,5 @@
 import os
+from typing import List
 
 import pytest
 
@@ -1328,7 +1329,7 @@ def test_reset_job_status(tmp_path):
     }
 
 
-def check_db_tables(names: list[str]):
+def check_db_tables(names: List[str]):
     tables = 0
     for name in names:
         trimmed_name = name[0]
