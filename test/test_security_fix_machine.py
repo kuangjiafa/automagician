@@ -3,25 +3,26 @@ from unittest.mock import MagicMock
 import pytest
 import shlex
 
-# Mock fabric before importing anything else
-mock_fabric = MagicMock()
-sys.modules["fabric"] = mock_fabric
-sys.modules["fabric.transfer"] = MagicMock()
-sys.modules["fabric.connection"] = MagicMock()
 
-# Mock SshScp if it cannot be imported (because fabric is missing)
-try:
-    from automagician.classes import SshScp
-except (ImportError, NameError):
-    from dataclasses import dataclass
-    @dataclass
-    class SshScp:
-        ssh: MagicMock
-        scp: MagicMock
+def test_scp_get_dir_machine_injection(monkeypatch):
+    # Mock fabric and its submodules for this test only
+    mock_fabric = MagicMock()
+    monkeypatch.setitem(sys.modules, "fabric", mock_fabric)
+    monkeypatch.setitem(sys.modules, "fabric.transfer", MagicMock())
+    monkeypatch.setitem(sys.modules, "fabric.connection", MagicMock())
 
-from automagician.machine import scp_get_dir
+    # Mock SshScp if it cannot be imported (because fabric is missing)
+    try:
+        from automagician.classes import SshScp  # type: ignore[import]
+    except (ImportError, NameError):
+        from dataclasses import dataclass
 
-def test_scp_get_dir_machine_injection():
+        @dataclass
+        class SshScp:  # type: ignore[no-redef]
+            ssh: MagicMock
+            scp: MagicMock
+
+    from automagician.machine import scp_get_dir  # type: ignore[import]
     mock_ssh = MagicMock()
     mock_scp = MagicMock()
     # Mock return value of ssh.run
