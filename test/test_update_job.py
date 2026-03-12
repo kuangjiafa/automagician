@@ -83,6 +83,21 @@ def test_log_error_prev_errors(tmp_path):
     assert "ZBRENT: fatal error in bracketing" in log_file
 
 
+def test_log_error_no_errors(tmp_path):
+    job_path = os.path.join(tmp_path, "job_path")
+    home_path = os.path.join(tmp_path, "fake_home")
+    os.mkdir(job_path)
+    os.mkdir(home_path)
+    ll_out_path = os.path.join(job_path, "ll_out")
+    with open(ll_out_path, "w") as f:
+        f.write("Running job normally...\nNo issues here.\n")
+    log_error(job_path, home_path)
+    assert os.path.exists(os.path.join(home_path, "error_log.dat"))
+    with open(os.path.join(home_path, "error_log.dat"), "r") as error_log:
+        log_file = error_log.read()
+    assert log_file == ""
+
+
 def test_fix_error_ZBRENT_no_CONTCAR(tmp_path):
     job_path = os.path.join(tmp_path, "job_path")
     os.mkdir(job_path)
