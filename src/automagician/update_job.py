@@ -147,26 +147,33 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
         keys = left hand side of the = ex
           x = y
           the key is x, while the value is y"""
-    with open(path, "r") as read_incar:
-        lines = read_incar.readlines()
-
-    for i, line in enumerate(lines):
-        if "=" not in line:
-            continue
-        tag = line.split("=")[0].strip()
-        if tag in tags_dict:
+    logger = logging.getLogger()
+    read_incar = open(path, "r")
+    lines = read_incar.readlines()
+    for i in range(0, len(lines)):
+        tag = lines[i].strip().split("=")[0]
+        try:
             new_val = tags_dict[tag]
-            if new_val is not None:
-                lines[i] = f"{tag}={new_val}\n"
-                tags_dict[tag] = None
+            tags_dict[tag] = None
+            lines[i] = tag + "=" + new_val + "\n"  # type: ignore
+        except KeyError:
+            logger.error("KeyError")
+            traceback.print_exc()
+            continue
 
-    with open(path, "w") as write_incar:
-        write_incar.writelines(lines)
-        more_lines = []
-        for tag, val in tags_dict.items():
-            if val is not None:
-                more_lines.append(f"{tag}={val}\n")
-        write_incar.writelines(more_lines)
+    read_incar.close()
+
+    write_incar = open(path, "w")
+    write_incar.writelines(lines)
+
+    more_lines = []
+    for tag in tags_dict:
+        val = tags_dict[tag]
+        if val is not None:
+            more_lines.append(tag + "=" + val + "\n")
+
+    write_incar.writelines(more_lines)
+    write_incar.close()
 
 
 def switch_subfile(

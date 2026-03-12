@@ -122,7 +122,7 @@ class Database:
             FROM dos_jobs d
             LEFT JOIN opt_jobs o ON d.opt_id = o.rowid
         """
-        for job in self.db.execute(query):
+        for job in self.db.execute(query).fetchall():
             opt_id = job[0]
             sc_status = JobStatus(job[1])
             dos_status = JobStatus(job[2])
@@ -161,7 +161,7 @@ class Database:
             FROM wav_jobs w
             LEFT JOIN opt_jobs o ON w.opt_id = o.rowid
         """
-        for job in self.db.execute(query):
+        for job in self.db.execute(query).fetchall():
             opt_id = job[0]
             wav_status = JobStatus(job[1])
             wav_last_on = Machine(job[2])
