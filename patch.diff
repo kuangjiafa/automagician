@@ -1,0 +1,11 @@
+--- src/automagician/process_job.py
++++ src/automagician/process_job.py
+@@ -28,8 +28,10 @@
+
+ if TYPE_CHECKING:
+     import automagician.database
+
++try:
++    from automagician.classes import SshScp
+     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+         """Puts files inside the remote directory to the local directory
