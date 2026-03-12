@@ -148,6 +148,7 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
         keys = left hand side of the = ex
           x = y
           the key is x, while the value is y"""
+    logger = logging.getLogger()
     with open(path, "r") as read_incar:
         lines = read_incar.readlines()
 

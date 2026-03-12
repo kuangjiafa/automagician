@@ -1,3 +1,4 @@
+import os
 from automagician.update_job import set_incar_tags
 
 def test_set_incar_tags_missing_equals(tmp_path):
