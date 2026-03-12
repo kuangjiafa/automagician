@@ -56,3 +56,32 @@ def test_scp_get_dir_injection():
     expected_command_start = "cd " + shlex.quote(remote_path)
 
     assert command.startswith(expected_command_start)
+
+def test_archive_converged_success(tmp_path):
+    from automagician.small_functions import archive_converged
+    import os
+
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+
+    converged_file = home_dir / "converged_jobs.dat"
+    archive_file = home_dir / "archive_converged.dat"
+
+    converged_file.write_text("job1\njob2\n")
+
+    archive_converged(str(home_dir))
+
+    assert not converged_file.exists()
+    assert archive_file.exists()
+    assert archive_file.read_text() == "job1\njob2\n"
+
+def test_archive_converged_missing_file(tmp_path):
+    from automagician.small_functions import archive_converged
+    import os
+
+    home_dir = tmp_path / "home"
+    home_dir.mkdir()
+
+    import pytest
+    with pytest.raises(FileNotFoundError):
+        archive_converged(str(home_dir))
