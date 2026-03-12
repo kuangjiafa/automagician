@@ -707,7 +707,7 @@ def get_submitted_jobs(
 
 
 def gone_job_check(
-    database: Database,
+    database: "automagician.database.Database",
     opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -775,7 +775,7 @@ def submit_queue(
     opt_jobs: Dict[str, OptJob],
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
-    database: Database,
+    database: "automagician.database.Database",
     limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -926,7 +926,9 @@ def submit_queue(
         os.chdir(cwd)
 
 
-def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
+def add_to_insta_submit(
+    job_dir: str, machine: str, database: "automagician.database.Database"
+) -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB
