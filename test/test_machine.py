@@ -1,5 +1,7 @@
 import logging
 
+import pytest
+
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import *
 
@@ -20,6 +22,21 @@ def test_is_tacc():
     assert is_tacc(Machine.FRONTERA_TACC)
     assert is_tacc(Machine.LS6_TACC)
     assert is_tacc(Machine.STAMPEDE2_TACC)
+
+
+@pytest.mark.parametrize(
+    "machine, expected",
+    [
+        (Machine.FRI, "fri.sub"),
+        (Machine.HALIFAX, "halifax.sub"),
+        (Machine.STAMPEDE2_TACC, "knl.mpi.slurm"),
+        (Machine.FRONTERA_TACC, "clx.mpi.slurm"),
+        (Machine.LS6_TACC, "milan.mpi.slurm"),
+        (Machine.UNKNOWN, "INVALID"),
+    ],
+)
+def test_get_subfile(machine: Machine, expected: str):
+    assert get_subfile(machine) == expected
 
 
 def test_ssh_scp_init():
