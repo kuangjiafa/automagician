@@ -47,9 +47,6 @@ try:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
 
-except ImportError:
-    pass
-
 
 def process_opt(
     job_directory: str,
@@ -802,11 +799,11 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            else:
+                # Based on the classes definition, if it's not "NoSSH", it has .ssh
+                other_machine_job_count = int(ssh_config.config.ssh.run("squeue", hide=True).stdout)
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
