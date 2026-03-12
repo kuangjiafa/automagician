@@ -33,22 +33,19 @@ if TYPE_CHECKING:
 try:
     from automagician.classes import SshScp  # noqa: F811
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
+def scp_get_dir(remote: str, local: str, ssh_scp: "SshScp") -> None:
+    """Puts files inside the remote directory to the local directory
 
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
+    Args:
+        remote: the directory on the remote machine to transfer files from
+        local: the directory on the local machine to transfer files to
+    """
+    for f in ssh_scp.ssh.run(
+        "cd " + remote + "; find . -type f | cut -c 2-"
+    ).stdout.split("\n"):
+        if len(f) < 1:
+            continue
+        ssh_scp.scp.get(remote + f, local + f)
 
 
 def process_opt(
@@ -708,7 +705,7 @@ def get_submitted_jobs(
 
 
 def gone_job_check(
-    database: Database,
+    database: "Database",
     opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -776,7 +773,7 @@ def submit_queue(
     opt_jobs: Dict[str, OptJob],
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
-    database: Database,
+    database: "Database",
     limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -802,11 +799,10 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            else:
+                other_machine_job_count = int(ssh_config.config.ssh.run("squeue", hide=True).stdout)
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -923,7 +919,7 @@ def submit_queue(
         os.chdir(cwd)
 
 
-def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
+def add_to_insta_submit(job_dir: str, machine: str, database: "Database") -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB

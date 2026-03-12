@@ -3,6 +3,8 @@ import os
 import shutil
 from pathlib import PosixPath
 
+import pytest
+
 from automagician.classes import DosJob, JobStatus, OptJob, WavJob
 from automagician.small_functions import get_opt_dir
 from automagician.update_job import (
@@ -39,6 +41,11 @@ def test_get_error_message_no_messages(tmp_path):
 
     error_messages = get_error_message(tmp_path)
     assert error_messages == []
+
+
+def test_get_error_message_no_ll_out(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        get_error_message(tmp_path)
 
 
 def test_get_error_message_two_message(tmp_path):
