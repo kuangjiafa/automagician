@@ -28,6 +28,7 @@ from automagician.classes import (
 if TYPE_CHECKING:
     import automagician.database
 
+try:
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
 
@@ -41,7 +42,6 @@ if TYPE_CHECKING:
             if len(f) < 1:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
-
 except ImportError:
     pass
 
@@ -177,12 +177,44 @@ def process_opt(
 
 
 def get_residueSFE(job_directory: str) -> Tuple[int, float, float]:
-    """Currently returns a tuple of 3 zeroes
+    """Gets the residue, S, F, E from OUTCAR
 
-    Goal seems to be to return the step, force, and total energy of the final step in a tuple
+    Returns:
+      Tuple[int, float, float]: A tuple containing the step number, the force, and the energy
     """
-    # this function cannot be used before cmbFE can be created correctly
-    return 0, 0.0, 0.0
+    outcar_path = os.path.join(job_directory, "OUTCAR")
+    if not os.path.exists(outcar_path):
+        return 0, 0.0, 0.0
+
+    step = 0
+    force = 0.0
+    energy = 0.0
+
+    with open(outcar_path, "r", encoding="utf-8") as f:
+        for line in f:
+            if "Iteration" in line:
+                # e.g., "       Iteration    1(   1)"
+                parts = line.split()
+                try:
+                    step = int(parts[1].split('(')[0])
+                except (IndexError, ValueError):
+                    pass
+            elif "FORCES: max atom, RMS" in line:
+                # e.g., " FORCES: max atom, RMS     0.123456    0.012345"
+                parts = line.split()
+                try:
+                    force = float(parts[-2])
+                except (IndexError, ValueError):
+                    pass
+            elif "free  energy   TOTEN  =" in line:
+                # e.g., "  free  energy   TOTEN  =       -12.34567890 eV"
+                parts = line.split()
+                try:
+                    energy = float(parts[-2])
+                except (IndexError, ValueError):
+                    pass
+
+    return step, force, energy
 
 
 def check_error(job_directory: str) -> bool:

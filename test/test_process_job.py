@@ -15,6 +15,7 @@ from automagician.process_job import (
     check_has_opt,
     determine_box_convergence,
     determine_convergence,
+    get_residueSFE,
     gone_job_check,
     grep_ll_out_convergence,
     is_isif3,
@@ -23,6 +24,51 @@ from automagician.process_job import (
     process_opt,
     process_unconverged,
 )
+
+
+def test_get_residueSFE(tmp_path):
+    """Test get_residueSFE returns its default zeroes tuple when no OUTCAR is present."""
+    job_dir = tmp_path / "dummy_job"
+    job_dir.mkdir()
+    result = get_residueSFE(str(job_dir))
+    assert result == (0, 0.0, 0.0)
+
+def test_get_residueSFE_with_outcar(tmp_path):
+    """Test get_residueSFE parses step, force, and energy from an OUTCAR file."""
+    job_dir = tmp_path / "dummy_job"
+    job_dir.mkdir()
+
+    outcar_content = '''
+       Iteration    1(   1)
+  free  energy   TOTEN  =       -10.50000000 eV
+ FORCES: max atom, RMS     0.500000    0.100000
+       Iteration    2(   2)
+  free  energy   TOTEN  =       -12.34567890 eV
+ FORCES: max atom, RMS     0.123456    0.012345
+'''
+
+    outcar_path = job_dir / "OUTCAR"
+    outcar_path.write_text(outcar_content, encoding="utf-8")
+
+    result = get_residueSFE(str(job_dir))
+    assert result == (2, 0.123456, -12.34567890)
+
+def test_get_residueSFE_invalid_outcar(tmp_path):
+    """Test get_residueSFE handles invalid lines in an OUTCAR file safely."""
+    job_dir = tmp_path / "dummy_job"
+    job_dir.mkdir()
+
+    outcar_content = '''
+       Iteration    invalid
+  free  energy   TOTEN  =       invalid eV
+ FORCES: max atom, RMS     invalid    0.012345
+'''
+
+    outcar_path = job_dir / "OUTCAR"
+    outcar_path.write_text(outcar_content, encoding="utf-8")
+
+    result = get_residueSFE(str(job_dir))
+    assert result == (0, 0.0, 0.0)
 
 
 def test_check_has_opt_no_files(tmp_path):
