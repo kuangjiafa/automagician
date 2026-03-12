@@ -1328,9 +1328,7 @@ def test_reset_job_status(tmp_path):
     }
 
 
-from typing import List
-
-def check_db_tables(names: List[str]):
+def check_db_tables(names: list[str]):
     tables = 0
     for name in names:
         trimmed_name = name[0]
