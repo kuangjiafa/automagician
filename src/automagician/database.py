@@ -213,7 +213,6 @@ class Database:
             wav_jobs: A collection of every wav_job known.
         """
         import automagician.update_job as update_job
-
         logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)

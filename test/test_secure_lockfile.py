@@ -10,20 +10,15 @@ import automagician.constants as constants
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import write_lockfile
 
-
 class TestSecureLockfile(unittest.TestCase):
     @patch("automagician.machine.os.makedirs")
     @patch("automagician.machine.subprocess.run")
     @patch("automagician.machine.os.path.isdir")
-    @patch(
-        "automagician.machine.exists"
-    )  # Patch exists from os.path imported as exists in machine.py
-    def test_write_lockfile_secure_creation(
-        self, mock_exists, mock_isdir, mock_subprocess_run, mock_makedirs
-    ):
+    @patch("automagician.machine.exists")  # Patch exists from os.path imported as exists in machine.py
+    def test_write_lockfile_secure_creation(self, mock_exists, mock_isdir, mock_subprocess_run, mock_makedirs):
         # Setup mocks
-        mock_isdir.return_value = False  # Lock directory does not exist locally
-        mock_exists.return_value = False  # Lock file does not exist locally
+        mock_isdir.return_value = False # Lock directory does not exist locally
+        mock_exists.return_value = False # Lock file does not exist locally
 
         mock_ssh = MagicMock()
         mock_ssh_config = MagicMock()
@@ -41,7 +36,7 @@ class TestSecureLockfile(unittest.TestCase):
                 result.stderr = ""
             elif "test -e" in cmd:
                 # Check for lock file existence
-                result.ok = False  # Does not exist
+                result.ok = False # Does not exist
             else:
                 result.ok = True
             return result
@@ -64,16 +59,14 @@ class TestSecureLockfile(unittest.TestCase):
         secure_mode_found = False
         for call in mock_makedirs.call_args_list:
             # Check kwargs for mode
-            if "mode" in call.kwargs and call.kwargs["mode"] == 0o700:
+            if 'mode' in call.kwargs and call.kwargs['mode'] == 0o700:
                 secure_mode_found = True
             # Check args position 1 for mode
             elif len(call.args) > 1 and call.args[1] == 0o700:
                 secure_mode_found = True
 
         if not secure_mode_found:
-            self.fail(
-                "Security Vulnerability: os.makedirs not called with secure mode (0o700)"
-            )
+            self.fail("Security Vulnerability: os.makedirs not called with secure mode (0o700)")
 
         # --- Remote Security Checks ---
 
@@ -92,15 +85,10 @@ class TestSecureLockfile(unittest.TestCase):
                 secure_remote_ownership_check_found = True
 
         if not secure_remote_mkdir_found:
-            self.fail(
-                "Security Vulnerability: Remote command is missing secure mkdir (-m 700)"
-            )
+             self.fail("Security Vulnerability: Remote command is missing secure mkdir (-m 700)")
 
         if not secure_remote_ownership_check_found:
-            self.fail(
-                "Security Vulnerability: Remote command is missing ownership check (stat -c ... id -u)"
-            )
-
+             self.fail("Security Vulnerability: Remote command is missing ownership check (stat -c ... id -u)")
 
 if __name__ == "__main__":
     unittest.main()

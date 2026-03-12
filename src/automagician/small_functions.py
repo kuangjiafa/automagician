@@ -9,6 +9,7 @@ from typing import Literal
 try:
     from automagician.classes import SshScp
 
+
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
 
@@ -17,7 +18,7 @@ try:
             local: the directory on the local machine to transfer files to
         """
         for f in ssh_scp.ssh.run(
-            "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
+                "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
