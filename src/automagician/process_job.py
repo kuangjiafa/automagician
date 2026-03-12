@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import os
 import re
@@ -307,7 +308,10 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     try:
         with open(ll_out, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
-                if "reached required accuracy - stopping structural energy minimisation" in line:
+                if (
+                    "reached required accuracy - stopping structural energy minimisation"
+                    in line
+                ):
                     return True
     except OSError:
         return False
@@ -796,11 +800,12 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            else:
+                other_machine_job_count = int(
+                    ssh_config.config.ssh.run("squeue", hide=True).stdout
+                )
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -820,12 +825,18 @@ def submit_queue(
 
             sub_queue_index = 0
             import automagician.update_job as update_job
+
             while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
                 update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
                 new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
                 machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-                ssh_config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
+                ssh_config.ssh.run(
+                    "cd "
+                    + shlex.quote(new_loc)
+                    + " && sbatch "
+                    + shlex.quote(other_subfile)
+                )  # type: ignore
                 update_job.set_status_for_newly_submitted_job(
                     job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
@@ -834,7 +845,9 @@ def submit_queue(
             while sub_queue_index < num_to_sub:
                 job_dir = sub_queue[sub_queue_index]
                 os.chdir(job_dir)
-                sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
+                sbatch_process = subprocess.run(
+                    ["sbatch", os.path.join(job_dir, subfile)]
+                )
                 print(sbatch_process)
                 print(sbatch_process.returncode)
                 if sbatch_process.returncode != 0:
@@ -877,7 +890,9 @@ def submit_queue(
                 for i in range(0, 3):
                     if total_free_spaces == 0:
                         continue
-                    num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
+                    num_will_sub[i] = round(
+                        num_can_sub[i] * num_to_sub / total_free_spaces
+                    )
                     num_to_sub = num_to_sub - num_will_sub[i]
                     total_free_spaces = total_free_spaces - num_can_sub[i]
 
@@ -898,7 +913,9 @@ def submit_queue(
                             machine,
                         )
                         add_to_insta_submit(
-                            job_dir, machine_file.get_machine_name(Machine(i + 2)), database
+                            job_dir,
+                            machine_file.get_machine_name(Machine(i + 2)),
+                            database,
                         )
                     update_job.set_status_for_newly_submitted_job(
                         job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False

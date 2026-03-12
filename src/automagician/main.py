@@ -212,7 +212,9 @@ def main_wrapper(args: argparse.Namespace) -> None:
 
     Args:
         args: The parsed arguments from the CommandLine"""
-    sub_queue: list[str] = []
+    from typing import List
+
+    sub_queue: List[str] = []
     set_up_logger(args.silent, args.verbose)
     logger = logging.getLogger()
     try:

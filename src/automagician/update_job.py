@@ -15,7 +15,6 @@ import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 
-
 def add_preliminary_results(
     job_directory: str,
     step: int,
@@ -49,7 +48,10 @@ def log_error(job_directory: str, home: str) -> None:
             )
 
 
-def get_error_message(job_directory: str) -> list[str]:
+from typing import List
+
+
+def get_error_message(job_directory: str) -> List[str]:
     """Gets the error message from ll_out and returns all found
     Args:
       job_directory (str): A path to the directory that contains a job which has an error
