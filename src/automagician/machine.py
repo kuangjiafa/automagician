@@ -6,9 +6,12 @@ import shlex
 import socket
 import subprocess
 from os.path import exists
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import automagician.constants as constants
+
+if TYPE_CHECKING:
+    from automagician.classes import SshScp
 from automagician.classes import Machine, SSHConfig
 
 no_fabric = False
@@ -244,25 +247,22 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
 
 if not no_fabric:
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: "SshScp") -> None:
         """Puts files inside the remote directory to the local directory
 
         Args:
         remote (str): the directory on the remote machine to transfer files from
         local (str): the directory on the local machine to transfer files to
         """
-        # We assume ssh_scp is SshScp here, but we use object to match signature
-        # This is a bit of a hack to please mypy without importing SshScp globally if not available
-        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
-        for f in real_ssh_scp.ssh.run(
+        for f in ssh_scp.ssh.run(
             "cd " + remote + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
-            real_ssh_scp.scp.get(remote + f, local + f)
+            ssh_scp.scp.get(remote + f, local + f)
 else:
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: "SshScp") -> None:
         pass
 
 
