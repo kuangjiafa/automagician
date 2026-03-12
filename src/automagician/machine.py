@@ -6,9 +6,12 @@ import shlex
 import socket
 import subprocess
 from os.path import exists
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import automagician.constants as constants
+
+if TYPE_CHECKING:
+    from automagician.classes import SshScp
 from automagician.classes import Machine, SSHConfig
 
 no_fabric = False
@@ -133,7 +136,9 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
     else:
         stat_info = os.stat(constants.LOCK_DIR)
         if stat_info.st_uid != os.getuid():
-            raise PermissionError(f"{constants.LOCK_DIR} is not owned by the current user.")
+            raise PermissionError(
+                f"{constants.LOCK_DIR} is not owned by the current user."
+            )
         if (stat_info.st_mode & 0o777) != 0o700:
             os.chmod(constants.LOCK_DIR, 0o700)
 
@@ -142,20 +147,20 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
         # Use atomic check-and-create or verify ownership
         quoted_lock_dir = shlex.quote(constants.LOCK_DIR)
         cmd = (
-            f'if [ ! -d {quoted_lock_dir} ]; then '
-            f'mkdir -p -m 700 {quoted_lock_dir}; '
-            f'else '
+            f"if [ ! -d {quoted_lock_dir} ]; then "
+            f"mkdir -p -m 700 {quoted_lock_dir}; "
+            f"else "
             f'if [ "$(stat -c %u {quoted_lock_dir})" -ne "$(id -u)" ]; then '
             f'echo "Remote lock directory owned by another user" >&2; exit 1; '
-            f'fi; '
-            f'chmod 700 {quoted_lock_dir}; '
-            f'fi'
+            f"fi; "
+            f"chmod 700 {quoted_lock_dir}; "
+            f"fi"
         )
         if not ssh_config.config.ssh.run(cmd, warn=True, hide=True).ok:
-             logger.error(
+            logger.error(
                 f"Remote lock directory {constants.LOCK_DIR} issue (permissions or ownership)."
             )
-             exit()
+            exit()
 
     if exists(constants.LOCK_FILE):
         logger.error(
@@ -189,7 +194,10 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
             f.write(lockstring)
         if machine < 2 and ssh_config.config != "NoSSH":
             ssh_config.config.ssh.run(
-                'echo ' + shlex.quote(lockstring) + ' > ' + shlex.quote(constants.LOCK_FILE)
+                "echo "
+                + shlex.quote(lockstring)
+                + " > "
+                + shlex.quote(constants.LOCK_FILE)
             )
 
 
@@ -224,9 +232,9 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
     os.chdir(local)
     try:
         for f in (
-                subprocess.run(["find", ".", "-type", "f"], capture_output=True)
-                        .stdout.decode("utf-8")
-                        .split("\n")
+            subprocess.run(["find", ".", "-type", "f"], capture_output=True)
+            .stdout.decode("utf-8")
+            .split("\n")
         ):
             if len(f) < 1:
                 continue
@@ -239,25 +247,22 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
 
 if not no_fabric:
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: "SshScp") -> None:
         """Puts files inside the remote directory to the local directory
 
         Args:
         remote (str): the directory on the remote machine to transfer files from
         local (str): the directory on the local machine to transfer files to
         """
-        # We assume ssh_scp is SshScp here, but we use object to match signature
-        # This is a bit of a hack to please mypy without importing SshScp globally if not available
-        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
-        for f in real_ssh_scp.ssh.run(
+        for f in ssh_scp.ssh.run(
             "cd " + remote + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
-            real_ssh_scp.scp.get(remote + f, local + f)
+            ssh_scp.scp.get(remote + f, local + f)
 else:
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: "SshScp") -> None:
         pass
 
 
