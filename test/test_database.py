@@ -1328,7 +1328,7 @@ def test_reset_job_status(tmp_path):
     }
 
 
-def check_db_tables(names: list[str]):
+def check_db_tables(names: list):
     tables = 0
     for name in names:
         trimmed_name = name[0]
