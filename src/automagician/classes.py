@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Literal
+from typing import Literal, Union
 
 try:
     from fabric import Connection, Transfer
@@ -12,7 +12,7 @@ try:
 
     @dataclass
     class SSHConfig:
-        config: Literal["NoSSH"] | SshScp
+        config: Union[Literal["NoSSH"], SshScp]
 
 except ImportError:
     print("Fabric was not imported.")
