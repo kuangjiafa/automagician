@@ -26,9 +26,14 @@ from automagician.classes import (
 )
 
 if TYPE_CHECKING:
-    import automagician.database
+    from automagician.database import Database
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+from automagician.classes import SshScp
+
+try:
+    from fabric.transfer import Transfer  # type: ignore
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: 'SshScp') -> None:
         """Puts files inside the remote directory to the local directory
 
         Args:
@@ -819,11 +824,12 @@ def submit_queue(
             sub_queue_index = 0
             while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
-                update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
+                import automagician.update_job as update_job_module
+                update_job_module.switch_subfile(job_dir, other_subfile, subfile, machine)
                 new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
                 machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
                 ssh_config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))  # type: ignore
-                update_job.set_status_for_newly_submitted_job(
+                update_job_module.set_status_for_newly_submitted_job(
                     job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
                 sub_queue_index = sub_queue_index + 1

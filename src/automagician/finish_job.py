@@ -75,7 +75,7 @@ def wrap_up(job_directory: str) -> None:
 
     import automagician.update_job as update_job
 
-    update_job.optimizer_review(job_directory)
+    optimizer_review(job_directory)
     os.chdir(cwd)
 
 

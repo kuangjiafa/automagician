@@ -40,7 +40,9 @@ def test_scp_get_dir_injection():
     mock_result.stdout = "file1\nfile2"
     mock_ssh.run.return_value = mock_result
 
-    mock_ssh_scp = SshScp(ssh=mock_ssh, scp=mock_scp)
+    mock_ssh_scp = SshScp()
+    mock_ssh_scp.ssh = mock_ssh
+    mock_ssh_scp.scp = mock_scp
 
     remote_path = "remote/path; rm -rf /"
     local_path = "local/path"

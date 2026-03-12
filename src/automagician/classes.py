@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Literal
+from typing import Literal, Union
 
 try:
     from fabric import Connection, Transfer
@@ -12,12 +12,15 @@ try:
 
     @dataclass
     class SSHConfig:
-        config: Literal["NoSSH"] | SshScp
+        config: Union[Literal["NoSSH"], SshScp]
 
 except ImportError:
     print("Fabric was not imported.")
     Connection = None
     Transfer = None
+
+    class SshScp:
+        pass
 
     @dataclass
     class SSHConfig:
@@ -82,7 +85,7 @@ class DosJob:
     """
 
     opt_dir = None
-    opt_id: int | Literal[-1]
+    opt_id: Union[int, Literal[-1]]
     sc_status: JobStatus
     dos_status: JobStatus
     sc_last_on: Machine
@@ -104,7 +107,7 @@ class WavJob:
       The machine that this job was connected to"""
 
     opt_dir = None
-    opt_id: int | Literal[-1]
+    opt_id: Union[int, Literal[-1]]
     wav_status: JobStatus
     wav_last_on: Machine
 
