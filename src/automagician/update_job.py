@@ -149,32 +149,29 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
           x = y
           the key is x, while the value is y"""
     logger = logging.getLogger()
-    read_incar = open(path, "r")
-    lines = read_incar.readlines()
+    with open(path, "r") as read_incar:
+        lines = read_incar.readlines()
+
     for i in range(0, len(lines)):
-        tag = lines[i].strip().split("=")[0]
-        try:
-            new_val = tags_dict[tag]
-            tags_dict[tag] = None
-            lines[i] = tag + "=" + new_val + "\n"  # type: ignore
-        except KeyError:
-            logger.error("KeyError")
-            traceback.print_exc()
+        line = lines[i].strip()
+        if "=" not in line:
             continue
 
-    read_incar.close()
-
-    write_incar = open(path, "w")
-    write_incar.writelines(lines)
+        tag = line.split("=")[0].strip()
+        if tag in tags_dict:
+            new_val = tags_dict[tag]
+            if new_val is not None:
+                lines[i] = tag + "=" + new_val + "\n"
+            tags_dict[tag] = None
 
     more_lines = []
-    for tag in tags_dict:
-        val = tags_dict[tag]
+    for tag, val in tags_dict.items():
         if val is not None:
             more_lines.append(tag + "=" + val + "\n")
 
-    write_incar.writelines(more_lines)
-    write_incar.close()
+    with open(path, "w") as write_incar:
+        write_incar.writelines(lines)
+        write_incar.writelines(more_lines)
 
 
 def switch_subfile(

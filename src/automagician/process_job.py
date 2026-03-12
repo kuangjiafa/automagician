@@ -27,8 +27,10 @@ from automagician.classes import (
 
 if TYPE_CHECKING:
     import automagician.database
+try:
+    from fabric.transfer import Transfer  # type: ignore
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: Transfer) -> None:
         """Puts files inside the remote directory to the local directory
 
         Args:
@@ -41,7 +43,6 @@ if TYPE_CHECKING:
             if len(f) < 1:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
-
 except ImportError:
     pass
 
