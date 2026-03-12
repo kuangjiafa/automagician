@@ -9,7 +9,7 @@ sys.modules["fabric.transfer"] = MagicMock()
 sys.modules["fabric.connection"] = MagicMock()
 
 try:
-    from automagician.small_functions import classify_job_dir, get_opt_dir, scp_get_dir
+    from automagician.small_functions import classify_job_dir, get_opt_dir, scp_get_dir, archive_converged
     from automagician.classes import SshScp
 except ImportError:
     # If imports fail (e.g. SshScp not found), skip tests that need it
@@ -56,3 +56,26 @@ def test_scp_get_dir_injection():
     expected_command_start = "cd " + shlex.quote(remote_path)
 
     assert command.startswith(expected_command_start)
+
+
+def test_archive_converged(tmp_path):
+    if 'archive_converged' not in globals():
+        pytest.skip("archive_converged not available")
+
+    # Setup files
+    converged_file = tmp_path / "converged_jobs.dat"
+    converged_file.write_text("dummy_job_data\n")
+
+    archive_file = tmp_path / "archive_converged.dat"
+
+    # Call function
+    archive_converged(str(tmp_path))
+
+    # Assert source is gone and destination exists
+    assert not converged_file.exists()
+    assert archive_file.exists()
+    assert archive_file.read_text() == "dummy_job_data\n"
+
+    # Assert raises FileNotFoundError if file is missing
+    with pytest.raises(FileNotFoundError):
+        archive_converged(str(tmp_path))
