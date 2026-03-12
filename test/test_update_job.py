@@ -361,6 +361,38 @@ def test_update_job_name_short_job_name(tmp_path):
         ]
 
 
+def test_update_job_name_missing_job_name(tmp_path):
+    subfile_path = os.path.join(tmp_path, "fri.sub")
+
+    original_lines = [
+        "#!/bin/bash -l\n",
+        "#SBATCH --chdir=./\n",
+        "#SBATCH --output=ll_out\n",
+        "#SBATCH --mail-type ALL\n",
+        "#SBATCH --export=ALL\n",
+        "#SBATCH --partition=all.q@@core24\n",
+        "#SBATCH --ntasks-per-node=24\n",
+        "\n",
+        "mpirun -n $NSLOTS vasp_gamma\n",
+        "\n",
+    ]
+
+    with open(subfile_path, "w") as f:
+        f.writelines(original_lines)
+
+    cwd = os.getcwd()
+    os.chdir(tmp_path)
+    try:
+        update_job_name(subfile_path)
+    finally:
+        os.chdir(cwd)
+
+    assert os.path.isfile(subfile_path)
+    with open(subfile_path) as f:
+        lines = f.readlines()
+        assert lines == original_lines
+
+
 def test_update_job_name_long_job_name(tmp_path):
     subfile_path = os.path.join(tmp_path, "fri.sub")
     shutil.copy("test/test_files/test_subfiles/fri_long_job_name.sub", subfile_path)
