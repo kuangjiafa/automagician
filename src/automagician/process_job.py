@@ -27,6 +27,8 @@ from automagician.classes import (
 
 if TYPE_CHECKING:
     import automagician.database
+    from automagician.classes import SshScp
+    from automagician.database import Database
 
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
@@ -42,8 +44,8 @@ if TYPE_CHECKING:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
 
-except ImportError:
-    pass
+# Removed incorrect try/except wrapping TYPE_CHECKING
+# because TYPE_CHECKING block does not actually execute imports at runtime
 
 
 def process_opt(
@@ -817,6 +819,7 @@ def submit_queue(
             )
 
             sub_queue_index = 0
+            import automagician.update_job as update_job
             while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
                 update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
