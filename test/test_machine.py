@@ -13,6 +13,16 @@ def test_is_oden():
     assert not is_oden(Machine.STAMPEDE2_TACC)
 
 
+def test_get_machine_name():
+    assert get_machine_name(Machine.FRI) == "fri.cm.utexas.edu"
+    assert get_machine_name(Machine.HALIFAX) == "halifax.cm.utexas.edu"
+    assert get_machine_name(Machine.STAMPEDE2_TACC) == "stampede2.tacc.utexas.edu"
+    assert get_machine_name(Machine.FRONTERA_TACC) == "frontera.tacc.utexas.edu"
+    assert get_machine_name(Machine.LS6_TACC) == "ls6.tacc.utexas.edu"
+    assert get_machine_name(Machine.UNKNOWN) == "localhost"
+    assert get_machine_name(-99) == "localhost"
+
+
 def test_is_tacc():
     assert not is_tacc(Machine.FRI)
     assert not is_tacc(Machine.HALIFAX)
