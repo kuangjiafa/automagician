@@ -22,11 +22,12 @@ from automagician.classes import (
     Machine,
     OptJob,
     SSHConfig,
+    SshScp,
     WavJob,
 )
 
 if TYPE_CHECKING:
-    import automagician.database
+    from automagician.database import Database
 
 
 def process_opt(
@@ -801,6 +802,8 @@ def submit_queue(
 
             sub_queue_index = 0
             while sub_queue_index < num_to_sub_there:
+                import automagician.update_job as update_job
+
                 job_dir = sub_queue[sub_queue_index]
                 update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
                 new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
@@ -866,6 +869,8 @@ def submit_queue(
                 for _ in range(0, num_will_sub[i]):
                     job_dir = sub_queue[sub_queue_index]
                     os.chdir(job_dir)
+                    import automagician.update_job as update_job
+
                     if i + 2 == machine:
                         subprocess.call(
                             ["sbatch", machine_file.get_subfile(Machine(i + 2))]
