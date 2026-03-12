@@ -7,7 +7,7 @@ import re
 import subprocess
 import traceback
 from os.path import exists
-from typing import Dict, Optional, TextIO
+from typing import Dict, List, Optional, TextIO
 
 import automagician.constants as constants
 import automagician.finish_job as finish_job
@@ -48,7 +48,7 @@ def log_error(job_directory: str, home: str) -> None:
             )
 
 
-def get_error_message(job_directory: str) -> list[str]:
+def get_error_message(job_directory: str) -> List[str]:
     """Gets the error message from ll_out and returns all found
     Args:
       job_directory (str): A path to the directory that contains a job which has an error
@@ -147,25 +147,29 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
         keys = left hand side of the = ex
           x = y
           the key is x, while the value is y"""
+    logger = logging.getLogger()
     with open(path, "r") as read_incar:
         lines = read_incar.readlines()
 
-    for i, line in enumerate(lines):
+    for i in range(0, len(lines)):
+        line = lines[i].strip()
         if "=" not in line:
             continue
+
         tag = line.split("=")[0].strip()
         if tag in tags_dict:
             new_val = tags_dict[tag]
             if new_val is not None:
-                lines[i] = f"{tag}={new_val}\n"
-                tags_dict[tag] = None
+                lines[i] = tag + "=" + new_val + "\n"
+            tags_dict[tag] = None
+
+    more_lines = []
+    for tag, val in tags_dict.items():
+        if val is not None:
+            more_lines.append(tag + "=" + val + "\n")
 
     with open(path, "w") as write_incar:
         write_incar.writelines(lines)
-        more_lines = []
-        for tag, val in tags_dict.items():
-            if val is not None:
-                more_lines.append(f"{tag}={val}\n")
         write_incar.writelines(more_lines)
 
 

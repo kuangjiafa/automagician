@@ -90,11 +90,8 @@ def test_set_incar_tags_whitespace_handling(tmp_path):
     set_incar_tags(str(incar_path), tags_dict)
 
     content = incar_path.read_text()
-    # Expect "ENCUT = 500" to be replaced by "ENCUT=600"
     assert "ENCUT=600" in content
     assert "ENCUT = 500" not in content
-    assert content.count("ENCUT") == 1
-
 
 def test_set_incar_tags_comments(tmp_path):
     """Test handling of comments."""

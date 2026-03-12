@@ -27,28 +27,7 @@ from automagician.classes import (
 )
 
 if TYPE_CHECKING:
-    from automagician.classes import SshScp
-    from automagician.database import Database
-
-try:
-    from automagician.classes import SshScp  # noqa: F811
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
+    import automagician.database
 
 
 def process_opt(
@@ -708,7 +687,7 @@ def get_submitted_jobs(
 
 
 def gone_job_check(
-    database: Database,
+    database: "automagician.database.Database",
     opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
     """Checks optomization jobs and turns them into gone jobs if they do not exist
@@ -776,7 +755,7 @@ def submit_queue(
     opt_jobs: Dict[str, OptJob],
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
-    database: Database,
+    database: "automagician.database.Database",
     limit: bool,
 ) -> None:
     """Submits the jobs to the queue of the machine
@@ -802,11 +781,11 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            else:
+                other_machine_job_count = int(ssh_config.config.ssh.run("squeue", hide=True).stdout)
+
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -827,16 +806,14 @@ def submit_queue(
             sub_queue_index = 0
             while sub_queue_index < num_to_sub_there:
                 job_dir = sub_queue[sub_queue_index]
-                update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
+                import automagician.update_job as update_job_module
+                update_job_module.switch_subfile(job_dir, other_subfile, subfile, machine)
                 new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
                 machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-                ssh_config.ssh.run(
-                    "cd "
-                    + shlex.quote(new_loc)
-                    + " && sbatch "
-                    + shlex.quote(other_subfile)
-                )  # type: ignore
-                update_job.set_status_for_newly_submitted_job(
+                if ssh_config.config != "NoSSH":
+                    ssh_config.config.ssh.run("cd " + shlex.quote(new_loc) + " && sbatch " + shlex.quote(other_subfile))
+
+                update_job_module.set_status_for_newly_submitted_job(
                     job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
                 sub_queue_index = sub_queue_index + 1
@@ -904,7 +881,8 @@ def submit_queue(
                             ["sbatch", machine_file.get_subfile(Machine(i + 2))]
                         )
                     else:
-                        update_job.switch_subfile(
+                        import automagician.update_job as update_job_module
+                        update_job_module.switch_subfile(
                             job_dir,
                             machine_file.get_subfile(Machine(i + 2)),
                             subfile,
@@ -915,7 +893,8 @@ def submit_queue(
                             machine_file.get_machine_name(Machine(i + 2)),
                             database,
                         )
-                    update_job.set_status_for_newly_submitted_job(
+                    import automagician.update_job as update_job_module
+                    update_job_module.set_status_for_newly_submitted_job(
                         job_dir, Machine(i + 2), dos_jobs, wav_jobs, opt_jobs, False
                     )
                     sub_queue_index = sub_queue_index + 1
@@ -923,7 +902,7 @@ def submit_queue(
         os.chdir(cwd)
 
 
-def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
+def add_to_insta_submit(job_dir: str, machine: str, database: "automagician.database.Database") -> None:
     """Adds the jobs in job_dir into insta_submit
 
     Does not commit changes to the DB
