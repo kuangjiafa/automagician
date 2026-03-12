@@ -6,6 +6,7 @@ import logging
 import os
 import sys
 import traceback
+from typing import List
 
 import automagician.constants as constants
 import automagician.machine as machine_file
@@ -212,7 +213,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
 
     Args:
         args: The parsed arguments from the CommandLine"""
-    sub_queue: list[str] = []
+    sub_queue: List[str] = []
     set_up_logger(args.silent, args.verbose)
     logger = logging.getLogger()
     try:
