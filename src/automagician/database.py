@@ -122,7 +122,7 @@ class Database:
             FROM dos_jobs d
             LEFT JOIN opt_jobs o ON d.opt_id = o.rowid
         """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute(query):
             opt_id = job[0]
             sc_status = JobStatus(job[1])
             dos_status = JobStatus(job[2])
@@ -161,7 +161,7 @@ class Database:
             FROM wav_jobs w
             LEFT JOIN opt_jobs o ON w.opt_id = o.rowid
         """
-        for job in self.db.execute(query).fetchall():
+        for job in self.db.execute(query):
             opt_id = job[0]
             wav_status = JobStatus(job[1])
             wav_last_on = Machine(job[2])
@@ -213,6 +213,7 @@ class Database:
             wav_jobs: A collection of every wav_job known.
         """
         import automagician.update_job as update_job
+
         logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)

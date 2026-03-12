@@ -15,7 +15,6 @@ import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 
-
 def add_preliminary_results(
     job_directory: str,
     step: int,

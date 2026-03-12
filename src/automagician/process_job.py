@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import logging
 import os
 import re
@@ -306,7 +307,10 @@ def grep_ll_out_convergence(ll_out: str) -> bool:
     try:
         with open(ll_out, "r", encoding="utf-8", errors="ignore") as f:
             for line in f:
-                if "reached required accuracy - stopping structural energy minimisation" in line:
+                if (
+                    "reached required accuracy - stopping structural energy minimisation"
+                    in line
+                ):
                     return True
     except OSError:
         return False
@@ -835,14 +839,15 @@ def submit_queue(
             while sub_queue_index < num_to_sub:
                 job_dir = sub_queue[sub_queue_index]
                 os.chdir(job_dir)
-                sbatch_process = subprocess.run(["sbatch", os.path.join(job_dir, subfile)])
+                sbatch_process = subprocess.run(
+                    ["sbatch", os.path.join(job_dir, subfile)]
+                )
                 print(sbatch_process)
                 print(sbatch_process.returncode)
                 if sbatch_process.returncode != 0:
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                     )
-                import automagician.update_job as update_job
 
                 update_job.set_status_for_newly_submitted_job(
                     job_dir,
@@ -878,7 +883,9 @@ def submit_queue(
                 for i in range(0, 3):
                     if total_free_spaces == 0:
                         continue
-                    num_will_sub[i] = round(num_can_sub[i] * num_to_sub / total_free_spaces)
+                    num_will_sub[i] = round(
+                        num_can_sub[i] * num_to_sub / total_free_spaces
+                    )
                     num_to_sub = num_to_sub - num_will_sub[i]
                     total_free_spaces = total_free_spaces - num_can_sub[i]
 
@@ -900,7 +907,9 @@ def submit_queue(
                             machine,
                         )
                         add_to_insta_submit(
-                            job_dir, machine_file.get_machine_name(Machine(i + 2)), database
+                            job_dir,
+                            machine_file.get_machine_name(Machine(i + 2)),
+                            database,
                         )
                     import automagician.update_job as update_job_module
                     update_job_module.set_status_for_newly_submitted_job(
