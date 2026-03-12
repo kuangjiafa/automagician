@@ -3,7 +3,6 @@
 import datetime
 import logging
 import os
-import re
 import subprocess
 import traceback
 from os.path import exists
