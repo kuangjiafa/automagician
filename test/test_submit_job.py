@@ -470,7 +470,7 @@ def test_get_submitted_job_in_dictionary(monkeypatch):
 @patch("automagician.process_job.subprocess")
 def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
     """Test DOS queue accounting on TACC machines uses dos_last_on field.
-    
+
     This test verifies:
     1. DOS jobs with RUNNING dos_status increment tacc_queue_sizes correctly
     2. The dos_last_on field is used (not opt_jobs[..].last_on)
@@ -479,7 +479,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
     # Mock subprocess to return empty squeue output (no jobs in queue)
     mock_subprocess.check_output = MagicMock(return_value="")
     mock_subprocess.call = MagicMock(return_value="")
-    
+
     # Setup: DOS job on STAMPEDE2 (machine 2) without a matching opt_job
     dos_job_dir = "/home/test_user/test_job/dos"
     dos_jobs = {
@@ -494,7 +494,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
     opt_jobs = {}  # No matching opt_job - this is the key test case
     wav_jobs = {}
     tacc_queue_sizes = [0, 0, 0]  # [STAMPEDE2, FRONTERA, LS6]
-    
+
     # Call get_submitted_jobs with STAMPEDE2_TACC machine
     get_submitted_jobs(
         Machine.STAMPEDE2_TACC,  # machine = 2
@@ -503,7 +503,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
         wav_jobs,
         tacc_queue_sizes,
     )
-    
+
     # Assert: tacc_queue_sizes[0] (STAMPEDE2) should be incremented
     # dos_last_on=2 (STAMPEDE2), so tacc_queue_sizes[2-2=0] should be 1
     assert tacc_queue_sizes == [1, 0, 0]
@@ -517,7 +517,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     # Mock subprocess to return empty squeue output
     mock_subprocess.check_output = MagicMock(return_value="")
     mock_subprocess.call = MagicMock(return_value="")
-    
+
     dos_job_dir = "/home/test_user/test_job/dos"
     dos_jobs = {
         dos_job_dir: DosJob(
@@ -531,7 +531,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     opt_jobs = {}  # No matching opt_job
     wav_jobs = {}
     tacc_queue_sizes = [0, 0, 0]
-    
+
     # Call with LS6_TACC machine
     get_submitted_jobs(
         Machine.LS6_TACC,  # machine = 4
@@ -540,7 +540,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
         wav_jobs,
         tacc_queue_sizes,
     )
-    
+
     # Assert: Both SC and DOS should increment their respective buckets
     # sc_last_on=3 (FRONTERA), tacc_queue_sizes[3-2=1] should be 1
     # dos_last_on=4 (LS6), tacc_queue_sizes[4-2=2] should be 1

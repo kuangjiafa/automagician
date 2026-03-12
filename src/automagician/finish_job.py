@@ -7,13 +7,15 @@ import subprocess
 import time
 
 import automagician.constants as constants
+
+
 def optimizer_review(job_directory: str) -> None:
     """Returns None
      --- What I think it wants to do below ---
     Goal seems to be to combine XDATCAR and FE
 
     Changes INCAR by adjusting INBARIAR to the most correct option
-    
+
     TODO: determine if this method is still relevant in current usage.
     """
     logger = logging.getLogger()

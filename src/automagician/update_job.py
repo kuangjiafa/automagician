@@ -15,7 +15,6 @@ import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
 
 
-
 def add_preliminary_results(
     job_directory: str,
     step: int,
@@ -153,14 +152,10 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     lines = read_incar.readlines()
     for i in range(0, len(lines)):
         tag = lines[i].strip().split("=")[0]
-        try:
+        if tag in tags_dict:
             new_val = tags_dict[tag]
             tags_dict[tag] = None
-            lines[i] = tag + "=" + new_val + "\n"  # type: ignore
-        except KeyError:
-            logger.error("KeyError")
-            traceback.print_exc()
-            continue
+            lines[i] = tag + "=" + str(new_val) + "\n"
 
     read_incar.close()
 
