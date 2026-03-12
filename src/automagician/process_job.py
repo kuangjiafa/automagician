@@ -27,8 +27,10 @@ from automagician.classes import (
 
 if TYPE_CHECKING:
     import automagician.database
+    from automagician.classes import SshScp
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+try:
+    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None: # type: ignore
         """Puts files inside the remote directory to the local directory
 
         Args:
