@@ -3,7 +3,6 @@
 import datetime
 import logging
 import os
-import re
 import subprocess
 import traceback
 from os.path import exists
@@ -13,7 +12,6 @@ import automagician.constants as constants
 import automagician.finish_job as finish_job
 import automagician.small_functions as small_functions
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, WavJob
-
 
 
 def add_preliminary_results(
