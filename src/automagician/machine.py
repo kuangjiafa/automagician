@@ -255,7 +255,7 @@ if not no_fabric:
         # This is a bit of a hack to please mypy without importing SshScp globally if not available
         real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
         for f in real_ssh_scp.ssh.run(
-            "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
+            "cd " + remote + "; find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
