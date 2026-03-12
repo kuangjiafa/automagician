@@ -12,6 +12,8 @@ import automagician.machine as machine_file
 import automagician.process_job as process_job
 import automagician.register as register
 import automagician.small_functions as small_functions
+from typing import List
+
 from automagician.classes import JobLimitError, JobStatus
 from automagician.database import Database
 
@@ -212,7 +214,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
 
     Args:
         args: The parsed arguments from the CommandLine"""
-    sub_queue: list[str] = []
+    sub_queue: List[str] = []
     set_up_logger(args.silent, args.verbose)
     logger = logging.getLogger()
     try:

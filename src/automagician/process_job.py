@@ -24,9 +24,9 @@ from automagician.classes import (
     SSHConfig,
     WavJob,
 )
-
 if TYPE_CHECKING:
-    import automagician.database
+    from automagician.classes import SshScp
+    from automagician.database import Database
 
     def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
         """Puts files inside the remote directory to the local directory
@@ -41,9 +41,6 @@ if TYPE_CHECKING:
             if len(f) < 1:
                 continue
             ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def process_opt(
@@ -838,7 +835,6 @@ def submit_queue(
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                     )
-                import automagician.update_job as update_job
 
                 update_job.set_status_for_newly_submitted_job(
                     job_dir,
