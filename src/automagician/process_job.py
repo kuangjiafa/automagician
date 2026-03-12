@@ -855,8 +855,6 @@ def submit_queue(
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
                     )
-                import automagician.update_job as update_job
-
                 update_job.set_status_for_newly_submitted_job(
                     job_dir,
                     machine,
