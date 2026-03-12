@@ -84,19 +84,16 @@ def test_set_incar_tags_empty_dict(tmp_path):
 def test_set_incar_tags_whitespace_handling(tmp_path):
     """Test handling of whitespace around '='."""
     incar_path = tmp_path / "INCAR"
-    # Note: Currently set_incar_tags splits by '=', so "ENCUT = 500" becomes tag "ENCUT ".
-    # If we pass "ENCUT" in dict, it won't match "ENCUT ".
-    # This test documents CURRENT behavior, even if it might be considered a bug.
     incar_path.write_text("ENCUT = 500\n")
 
     tags_dict = {"ENCUT": "600"}
     set_incar_tags(str(incar_path), tags_dict)
 
     content = incar_path.read_text()
-    # Expect "ENCUT = 500" to remain because "ENCUT " (from file) != "ENCUT" (from dict)
-    assert "ENCUT = 500" in content
-    # And "ENCUT=600" to be appended because "ENCUT" was not found in file (as "ENCUT ")
+    # Expect "ENCUT = 500" to be replaced by "ENCUT=600"
     assert "ENCUT=600" in content
+    assert "ENCUT = 500" not in content
+    assert content.count("ENCUT") == 1
 
 
 def test_set_incar_tags_comments(tmp_path):
