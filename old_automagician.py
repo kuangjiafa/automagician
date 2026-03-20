@@ -813,10 +813,9 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
   Tests
     TODO: Medium priority
       Simple, something not critical""" 
-  error_log = open(home+"/error_log.dat","a+")
-
-  for error_message in get_error_message(job_directory):
-    error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
+  with open(home+"/error_log.dat","a+") as error_log:
+    for error_message in get_error_message(job_directory):
+      error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
 
 def get_error_message(job_directory): 
   """Gets the error message from ll_out and returns all found
