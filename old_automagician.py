@@ -824,17 +824,15 @@ def get_error_message(job_directory):
     job_directory (str): A path to the directory that contains a job which has an error
   Returns:
     list(str): A list of error messages found. If none were found, returns an empty list.
-  Changes:
-    Changes current working direcctory to job_directory
   Tests
     Not Planned"""
   # Grep is likely faster, can use grep -i
-  os.chdir(job_directory)
-  ll_out = open('ll_out','r')
+  ll_out_path = os.path.join(job_directory, 'll_out')
   messages=[]
-  for line in ll_out:
-    if ("ERROR" in line) or ("error" in line):
-      messages.append(line)
+  with open(ll_out_path, 'r', encoding='utf-8', errors='ignore') as ll_out:
+    for line in ll_out:
+      if ("ERROR" in line) or ("error" in line):
+        messages.append(line)
   return messages
 
 def fix_error(job_directory):
