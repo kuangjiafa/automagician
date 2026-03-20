@@ -15,6 +15,7 @@ try:
         archive_converged,
         classify_job_dir,
         get_opt_dir,
+        reset_converged,
         scp_get_dir,
     )
 except ImportError:
@@ -22,6 +23,7 @@ except ImportError:
         archive_converged,
         classify_job_dir,
         get_opt_dir,
+        reset_converged,
     )
 
 
@@ -92,3 +94,26 @@ def test_archive_converged(tmp_path):
     # Assert raises FileNotFoundError if file is missing
     with pytest.raises(FileNotFoundError):
         archive_converged(str(tmp_path))
+
+
+def test_reset_converged(tmp_path):
+    if "reset_converged" not in globals():
+        pytest.skip("reset_converged not available")
+
+    # Setup files
+    converged_file = tmp_path / "converged_jobs.dat"
+    # reset_converged uses grep -e "^\/" to filter paths
+    converged_file.write_text("/path/to/job1\n/path/to/job2\nnot_a_path\n")
+
+    unconverged_file = tmp_path / "unconverged_jobs.dat"
+    unconverged_file.write_text("/path/to/existing_unconverged\n")
+
+    # Call function
+    reset_converged(str(tmp_path))
+
+    # Assert converged_jobs.dat is removed
+    assert not converged_file.exists()
+
+    # Assert unconverged_jobs.dat has appended filtered paths
+    expected_content = "/path/to/existing_unconverged\n/path/to/job1\n/path/to/job2\n"
+    assert unconverged_file.read_text() == expected_content
