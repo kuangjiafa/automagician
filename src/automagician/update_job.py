@@ -56,11 +56,13 @@ def get_error_message(job_directory: str) -> list[str]:
       list(str): A list of error messages found. If none were found, returns an empty list.
     Changes:
       Changes current working direcctory to job_directory"""
-    ll_out = open(os.path.join(job_directory, "ll_out"), "r")
     messages = []
-    for line in ll_out:
-        if ("ERROR" in line) or ("error" in line):
-            messages.append(line.strip("| \n"))
+    with open(
+        os.path.join(job_directory, "ll_out"), encoding="utf-8", errors="ignore"
+    ) as ll_out:
+        for line in ll_out:
+            if ("ERROR" in line) or ("error" in line):
+                messages.append(line.strip("| \n"))
     return messages
 
 
