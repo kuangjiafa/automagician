@@ -1,5 +1,7 @@
 # pylint: disable=duplicate-code,cyclic-import
 # pylint: disable=duplicate-code,cyclic-import
+from __future__ import annotations
+
 import datetime
 import logging
 import os
@@ -57,12 +59,13 @@ def get_error_message(job_directory: str) -> list[str]:
     Changes:
       Changes current working direcctory to job_directory"""
     messages = []
-    with open(
-        os.path.join(job_directory, "ll_out"), encoding="utf-8", errors="ignore"
-    ) as ll_out:
-        for line in ll_out:
-            if ("ERROR" in line) or ("error" in line):
-                messages.append(line.strip("| \n"))
+    try:
+        with open(os.path.join(job_directory, "ll_out"), "r") as ll_out:
+            for line in ll_out:
+                if "ERROR" in line or "error" in line:
+                    messages.append(line.strip("| \n"))
+    except FileNotFoundError:
+        pass
     return messages
 
 
