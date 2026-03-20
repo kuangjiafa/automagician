@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import traceback
 from os.path import exists
-from typing import TYPE_CHECKING, Dict, List, Literal, TextIO, Tuple
+from typing import TYPE_CHECKING, Dict, List, TextIO, Tuple, cast
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -16,15 +16,8 @@ import automagician.finish_job as finish_job
 import automagician.machine as machine_file
 import automagician.small_functions as small_functions
 import automagician.update_job as update_job
-from automagician.classes import (
-    DosJob,
-    GoneJob,
-    JobStatus,
-    Machine,
-    OptJob,
-    SSHConfig,
-    WavJob,
-)
+from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
+                                  SSHConfig, WavJob)
 
 if TYPE_CHECKING:
     from automagician.classes import SshScp
@@ -532,18 +525,15 @@ def process_wav(
 
     else:
         logger.debug("no wav_dir -> create_wav")
-        if not create_job.create_wav(
+        create_job.create_wav(
             job_directory=job_directory,
             continue_past_limit=continue_past_limit,
             limit=limit,
             sub_queue=sub_queue,
             machine=machine,
             hit_limit=hit_limit,
-        ):
-            wav_jobs[job_directory].wav_status = JobStatus.RUNNING
-        else:
-            logger.debug("cannot create wav_dir")
-            wav_jobs[job_directory].wav_status = JobStatus.ERROR
+        )
+        wav_jobs[job_directory].wav_status = JobStatus.RUNNING
 
         # wav_jobs[job_directory].wav_status = -1
 
@@ -741,9 +731,13 @@ def gone_job_check(
 
     for j in gone_jobs_list:
         logger.info(f"Job to delete: {j.old_dir}")
-        database.add_gone_job_to_db(j, False)
-        database.db.execute("delete from opt_jobs where dir = (?)", (j.old_dir,))
         opt_jobs.pop(j.old_dir)
+
+    database.add_gone_jobs_to_db(gone_jobs_list, commit=False)
+    database.db.executemany(
+        "delete from opt_jobs where dir = (?)",
+        [(j.old_dir,) for j in gone_jobs_list],
+    )
     database.db.connection.commit()
     return database.get_gone_jobs()
 
@@ -802,11 +796,12 @@ def submit_queue(
                 str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
             )
             other_machine_job_count = 0
-            match ssh_config.config:
-                case "NoSSH":
-                    other_machine_job_count = 0
-                case SshScp(ssh=ssh):
-                    other_machine_job_count = int(ssh.run("squeue", hide=True).stdout)
+            if ssh_config.config == "NoSSH":
+                other_machine_job_count = 0
+            elif isinstance(ssh_config.config, SshScp):
+                other_machine_job_count = int(
+                    ssh_config.config.ssh.run("squeue", hide=True).stdout
+                )
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
@@ -830,12 +825,13 @@ def submit_queue(
                 update_job.switch_subfile(job_dir, other_subfile, subfile, machine)
                 new_loc = home + constants.AUTOMAGIC_REMOTE_DIR + job_dir
                 machine_file.scp_put_dir(job_dir, new_loc, ssh_config)
-                ssh_config.ssh.run(
+                # ssh_config is verified to be SshScp via match/if logic above
+                cast("SshScp", ssh_config.config).ssh.run(
                     "cd "
                     + shlex.quote(new_loc)
                     + " && sbatch "
                     + shlex.quote(other_subfile)
-                )  # type: ignore
+                )
                 update_job.set_status_for_newly_submitted_job(
                     job_dir, Machine(1 - machine), dos_jobs, wav_jobs, opt_jobs, False
                 )
