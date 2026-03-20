@@ -55,17 +55,17 @@ def get_error_message(job_directory: str) -> list[str]:
     Args:
       job_directory (str): A path to the directory that contains a job which has an error
     Returns:
-      list(str): A list of error messages found. If none were found, contains a single str
-      saying "message not found"
+      list(str): A list of error messages found. If none were found, returns an empty list.
     Changes:
       Changes current working direcctory to job_directory"""
-    ll_out = open(os.path.join(job_directory, "ll_out"), "r")
     messages = []
-    for line in ll_out:
-        if ("ERROR" in line) or ("error" in line):
-            messages.append(line.strip("| \n"))
-    # if len(messages) == 0:
-    #     messages.append("error message not found!")
+    try:
+        with open(os.path.join(job_directory, "ll_out"), "r") as ll_out:
+            for line in ll_out:
+                if "ERROR" in line or "error" in line:
+                    messages.append(line.strip("| \n"))
+    except FileNotFoundError:
+        pass
     return messages
 
 
