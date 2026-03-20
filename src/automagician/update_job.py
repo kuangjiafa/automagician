@@ -1,5 +1,7 @@
 # pylint: disable=duplicate-code,cyclic-import
 # pylint: disable=duplicate-code,cyclic-import
+from __future__ import annotations
+
 import datetime
 import logging
 import os
