@@ -816,7 +816,6 @@ def log_error(job_directory,home): # potentially create an error buffer and writ
   error_log = open(home+"/error_log.dat","a+")
 
   for error_message in get_error_message(job_directory):
-    #TODO: ^ Can return a string, and does not always return a list
     error_log.write(str(datetime.datetime.now())+"  "+job_directory+"  "+error_message+"\n")
 
 def get_error_message(job_directory): 
@@ -824,9 +823,7 @@ def get_error_message(job_directory):
   Args:
     job_directory (str): A path to the directory that contains a job which has an error
   Returns:
-    list(str): A list of error messages iff error messages were found
-
-    str: message not found iff no messages were found
+    list(str): A list of error messages found. If none were found, returns an empty list.
   Changes:
     Changes current working direcctory to job_directory
   Tests
@@ -838,9 +835,6 @@ def get_error_message(job_directory):
   for line in ll_out:
     if ("ERROR" in line) or ("error" in line):
       messages.append(line)
-  if len(messages) == 0:
-    return "message not found!"
-    #WHY!, why not wrap this up in the same list, so the types are the same
   return messages
 
 def fix_error(job_directory):
