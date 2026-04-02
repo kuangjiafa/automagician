@@ -9,6 +9,10 @@ import automagician.machine as machine_file
 import automagician.process_job as process_job
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, SSHConfig, WavJob
 
+EXCLUDE_REGEX = re.compile(
+    r".*?(?<!^/home)((/run\d*)|(/dos)|(/sc)|(/[Ii]ni)|(/[Ff]in)|(/wav))"
+)
+
 
 def register(
     opt_jobs: Dict[str, OptJob],
@@ -124,8 +128,7 @@ def register(
 
 
 def exclude_regex(job_dir: str) -> bool:
-    regex = r".*?(?<!^/home)((/run\d*)|(/dos)|(/sc)|(/[Ii]ni)|(/[Ff]in)|(/wav))"
-    return bool(re.match(regex, job_dir))
+    return bool(EXCLUDE_REGEX.match(job_dir))
 
 
 def process_queue(

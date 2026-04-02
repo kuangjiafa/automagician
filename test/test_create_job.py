@@ -268,6 +268,7 @@ def test_create_sc_contcar(tmp_path):
     expected_sub_quene = [sc_job_path]
     assert sub_quene == expected_sub_quene
 
+
 def test_copy_inputs_basic(tmp_path):
     job_dir = tmp_path / "job"
     dest_dir = tmp_path / "dest"
