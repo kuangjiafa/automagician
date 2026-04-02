@@ -193,6 +193,9 @@ _SQUEUE_HEADER = "JOBID ST WORK_DIR"
 
 
 def _make_squeue_output(*job_lines):
+    # str(bytes_obj).split("\n") only works on real newlines, not \n in repr.
+    # _get_submitted_jobs_slurm does str(check_output(...)).split("\n"), so we
+    # mock check_output to return a plain string so str() is a no-op.
     return "\n".join([_SQUEUE_HEADER] + list(job_lines) + [""])
 
 
@@ -204,7 +207,7 @@ def test_get_submitted_jobs_slurm_opt_running(tmp_path):
     wav_jobs = {}
     with patch(
         "subprocess.check_output",
-        return_value=squeue_out.encode(),
+        return_value=squeue_out,  # string so str() is a no-op
     ):
         _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
@@ -218,7 +221,7 @@ def test_get_submitted_jobs_slurm_opt_error_status(tmp_path):
     opt_jobs = {}
     dos_jobs = {}
     wav_jobs = {}
-    with patch("subprocess.check_output", return_value=squeue_out.encode()):
+    with patch("subprocess.check_output", return_value=squeue_out):
         with patch("subprocess.call"):
             _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
@@ -232,7 +235,7 @@ def test_get_submitted_jobs_slurm_dos_job(tmp_path):
     opt_jobs = {}
     dos_jobs = {}
     wav_jobs = {}
-    with patch("subprocess.check_output", return_value=squeue_out.encode()):
+    with patch("subprocess.check_output", return_value=squeue_out):
         _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
     assert opt_dir in dos_jobs
@@ -246,7 +249,7 @@ def test_get_submitted_jobs_slurm_wav_job(tmp_path):
     opt_jobs = {}
     dos_jobs = {}
     wav_jobs = {}
-    with patch("subprocess.check_output", return_value=squeue_out.encode()):
+    with patch("subprocess.check_output", return_value=squeue_out):
         _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
     assert opt_dir in wav_jobs
@@ -260,7 +263,7 @@ def test_get_submitted_jobs_slurm_sc_job(tmp_path):
     opt_jobs = {}
     dos_jobs = {}
     wav_jobs = {}
-    with patch("subprocess.check_output", return_value=squeue_out.encode()):
+    with patch("subprocess.check_output", return_value=squeue_out):
         _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
     assert opt_dir in dos_jobs
@@ -273,7 +276,7 @@ def test_get_submitted_jobs_slurm_updates_existing_opt_job(tmp_path):
     opt_jobs = {opt_dir: OptJob(JobStatus.INCOMPLETE, Machine.FRI, Machine.FRI)}
     dos_jobs = {}
     wav_jobs = {}
-    with patch("subprocess.check_output", return_value=squeue_out.encode()):
+    with patch("subprocess.check_output", return_value=squeue_out):
         _get_submitted_jobs_slurm(Machine.FRI, opt_jobs, dos_jobs, wav_jobs)
 
     assert opt_jobs[opt_dir].status == JobStatus.RUNNING

@@ -62,7 +62,7 @@ def wrap_up(job_directory: str) -> None:
             largest_number = 0
             for run in runs:
                 try:
-                    number = int(run.partition("run")[2])
+                    number = int(os.path.basename(run).partition("run")[2])
                     if number >= largest_number:
                         largest_number = number + 1
                 except Exception:
