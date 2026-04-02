@@ -799,8 +799,14 @@ def submit_queue(
             if ssh_config.config == "NoSSH":
                 other_machine_job_count = 0
             elif isinstance(ssh_config.config, SshScp):
+<<<<<<< fix-gone-jobs-n-plus-one-deletion-11609175292766959682
                 other_squeue_output = ssh_config.config.ssh.run("squeue", hide=True).stdout
                 other_machine_job_count = len(str(other_squeue_output).splitlines())
+=======
+                other_machine_job_count = int(
+                    ssh_config.config.ssh.run("squeue", hide=True).stdout
+                )
+>>>>>>> main
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size

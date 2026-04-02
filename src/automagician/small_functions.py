@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import os
 import re
@@ -61,7 +63,7 @@ def archive_converged(home: str) -> None:
       home (str): the path to the users home directory
     """
     logger = logging.getLogger()
-    logger.warn("archive converged is deperciated, and will be reimplemented shortly")
+    logger.warning("archive converged is deprecated, and will be reimplemented shortly")
     shutil.move(
         os.path.join(home, "converged_jobs.dat"),
         os.path.join(home, "archive_converged.dat"),
@@ -71,11 +73,11 @@ def archive_converged(home: str) -> None:
 def reset_converged(home: str) -> None:
     """Moves all converged jobs from converged_jobs.dat to unconverged_jobs.dat
 
-    Depriacted
+    Deprecated
     Args:
       home (str): the path to the users home directory"""
     logger = logging.getLogger()
-    logger.warn("reset converged is deperciated, and will be reimplemented shortly")
+    logger.warning("reset converged is deprecated, and will be reimplemented shortly")
     with open(os.path.join(home, "unconverged_jobs.dat"), "a") as f:
         subprocess.call(
             ["grep", "-e", r"^\/", os.path.join(home, "converged_jobs.dat")],

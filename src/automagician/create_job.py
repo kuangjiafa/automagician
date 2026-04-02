@@ -114,7 +114,7 @@ def create_dos_from_sc(
     )
 
 
-def copy_inputs(subfile, job_directory: str, directory: str) -> None:
+def copy_inputs(subfile: str, job_directory: str, directory: str) -> None:
     os.mkdir(directory)
     shutil.copy(os.path.join(job_directory, subfile), directory)
     shutil.copy(os.path.join(job_directory, "KPOINTS"), directory)
