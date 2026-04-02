@@ -215,28 +215,137 @@ class Database:
         import automagician.update_job as update_job
 
         logger = logging.getLogger()
-        for job_dir in opt_jobs:
-            self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
 
-        for job_dir in dos_jobs:
+        # Batch insert/update for opt_jobs
+        opt_existing = {
+            row[1]: row[0] for row in self.db.execute("SELECT rowid, dir FROM opt_jobs")
+        }
+        opt_inserts = []
+        opt_updates = []
+
+        for job_dir, job in opt_jobs.items():
+            if job_dir in opt_existing:
+                opt_updates.append(
+                    (
+                        job_dir,
+                        job.status.value,
+                        job.home_machine.value,
+                        job.last_on.value,
+                        opt_existing[job_dir],
+                    )
+                )
+            else:
+                opt_inserts.append(
+                    (
+                        job_dir,
+                        job.status.value,
+                        job.home_machine.value,
+                        job.last_on.value,
+                    )
+                )
+
+        if opt_inserts:
+            self.db.executemany("INSERT INTO opt_jobs VALUES (?, ?, ?, ?)", opt_inserts)
+        if opt_updates:
+            self.db.executemany(
+                "UPDATE opt_jobs SET dir = ?, status = ?, home_machine = ?, last_on = ? WHERE rowid = ?",
+                opt_updates,
+            )
+
+        # Refresh opt_existing for dos and wav mapping
+        if opt_inserts:
+            opt_existing = {
+                row[1]: row[0]
+                for row in self.db.execute("SELECT rowid, dir FROM opt_jobs")
+            }
+
+        # Batch insert/update for dos_jobs
+        dos_existing = {
+            row[1]: row[0]
+            for row in self.db.execute("SELECT rowid, opt_id FROM dos_jobs")
+        }
+        dos_inserts = []
+        dos_updates = []
+
+        for job_dir, job in dos_jobs.items():
             opt_dir = small_functions.get_opt_dir(job_dir)
-            try:
-                self.add_dos_job_to_db(dos_jobs[job_dir], opt_dir, commit=False)
-            except ValueError:
+            if opt_dir not in opt_existing:
                 logger.warning(
                     f"no opt job at directory {opt_dir}. Expected as was adding a dos_job"
                 )
                 continue
 
-        for job_dir in wav_jobs:
+            opt_id = opt_existing[opt_dir]
+            if job.opt_id == -1:
+                job.opt_id = opt_id
+
+            if opt_id in dos_existing:
+                dos_updates.append(
+                    (
+                        job.sc_status.value,
+                        job.dos_status.value,
+                        job.sc_last_on.value,
+                        job.dos_last_on.value,
+                        dos_existing[opt_id],
+                    )
+                )
+            else:
+                dos_inserts.append(
+                    (
+                        opt_id,
+                        job.sc_status.value,
+                        job.dos_status.value,
+                        job.sc_last_on.value,
+                        job.dos_last_on.value,
+                    )
+                )
+
+        if dos_inserts:
+            self.db.executemany(
+                "INSERT INTO dos_jobs VALUES (?, ?, ?, ?, ?)", dos_inserts
+            )
+        if dos_updates:
+            self.db.executemany(
+                "UPDATE dos_jobs SET sc_status = ?, dos_status = ?, sc_last_on = ?, dos_last_on = ? WHERE rowid = ?",
+                dos_updates,
+            )
+
+        # Batch insert/update for wav_jobs
+        wav_existing = {
+            row[1]: row[0]
+            for row in self.db.execute("SELECT rowid, opt_id FROM wav_jobs")
+        }
+        wav_inserts = []
+        wav_updates = []
+
+        for job_dir, job in wav_jobs.items():
             opt_dir = small_functions.get_opt_dir(job_dir)
-            try:
-                self.add_wav_job_to_db(wav_jobs[job_dir], opt_dir, commit=False)
-            except ValueError:
+            if opt_dir not in opt_existing:
                 logger.warning(
                     f"no opt job at directory {opt_dir}. Expected as was adding a wav_job"
                 )
                 continue
+
+            opt_id = opt_existing[opt_dir]
+            if job.opt_id == -1:
+                job.opt_id = opt_id
+
+            if opt_id in wav_existing:
+                wav_updates.append(
+                    (job.wav_status.value, job.wav_last_on.value, wav_existing[opt_id])
+                )
+            else:
+                wav_inserts.append(
+                    (opt_id, job.wav_status.value, job.wav_last_on.value)
+                )
+
+        if wav_inserts:
+            self.db.executemany("INSERT INTO wav_jobs VALUES (?, ?, ?)", wav_inserts)
+        if wav_updates:
+            self.db.executemany(
+                "UPDATE wav_jobs SET wav_status = ?, wav_last_on = ? WHERE rowid = ?",
+                wav_updates,
+            )
 
         self.db.connection.commit()
         logger.info("automagician.db updated")
