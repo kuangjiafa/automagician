@@ -419,6 +419,33 @@ class Database:
         if commit:
             self.db.connection.commit()
 
+    def add_gone_jobs_to_db(
+        self, jobs_to_add: list[GoneJob], commit: bool = True
+    ) -> None:
+        """Adds (or updates) multiple gone_jobs to the database in batch.
+
+        Args:
+            jobs_to_add: The jobs to add to the database.
+            commit: Whether to commit the transaction. Committing the transaction
+                is slower, but is needed to allow the data to be persisted.
+                Turning this off is only recommended if you need to peform a
+                lot of database operations and will commit at the end of
+                peforming them."""
+        if not jobs_to_add:
+            return
+
+        dirs = [(j.old_dir,) for j in jobs_to_add]
+        self.db.executemany("DELETE FROM gone_jobs WHERE dir = ?", dirs)
+
+        insert_data = [
+            (j.old_dir, j.status.value, j.home_machine.value, j.last_on.value)
+            for j in jobs_to_add
+        ]
+        self.db.executemany("INSERT INTO gone_jobs VALUES (?, ?, ?, ?)", insert_data)
+
+        if commit:
+            self.db.connection.commit()
+
     def add_gone_job_to_db(self, job_to_add: GoneJob, commit: bool = True) -> None:
         """Adds (or updates) a gone_job to the database.
 

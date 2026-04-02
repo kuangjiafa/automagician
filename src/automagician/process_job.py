@@ -739,11 +739,16 @@ def gone_job_check(
                 )
             )
 
-    for j in gone_jobs_list:
-        logger.info(f"Job to delete: {j.old_dir}")
-        database.add_gone_job_to_db(j, False)
-        database.db.execute("delete from opt_jobs where dir = (?)", (j.old_dir,))
-        opt_jobs.pop(j.old_dir)
+    if gone_jobs_list:
+        logger.info(f"Adding {len(gone_jobs_list)} gone jobs to db")
+        database.add_gone_jobs_to_db(gone_jobs_list, False)
+
+        dirs_to_delete = [(j.old_dir,) for j in gone_jobs_list]
+        database.db.executemany("delete from opt_jobs where dir = (?)", dirs_to_delete)
+
+        for j in gone_jobs_list:
+            opt_jobs.pop(j.old_dir)
+
     database.db.connection.commit()
     return database.get_gone_jobs()
 
