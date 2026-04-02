@@ -472,8 +472,7 @@ class Database:
         lines.append("OPT JOBS\n")
         lines.append("   status    | home machine |    last on    | job dir\n")
         lines.append("-------------|--------------|---------------|--------\n")
-        for job_dir in opt_jobs:
-            job = opt_jobs[job_dir]
+        for job_dir, job in opt_jobs.items():
             lines.append(
                 f"{job.status.name:13}|{job.home_machine.name:14}|{job.last_on.name:15}|{job_dir}\n"
             )
@@ -492,8 +491,7 @@ class Database:
         lines.append(
             "-------------|-------------|--------------|---------------|--------\n"
         )
-        for job_dir in dos_jobs:
-            job = dos_jobs[job_dir]
+        for job_dir, job in dos_jobs.items():
             lines.append(
                 f"{job.sc_status.name:13}|{job.dos_status.name:13}|{job.sc_last_on.name:14}|{job.dos_last_on.name:15}|{job_dir}\n"
             )
@@ -508,8 +506,7 @@ class Database:
         lines.append("WAV JOBS\n")
         lines.append("  wav status  |  wav last on  | job dir\n")
         lines.append("--------------|---------------|--------\n")
-        for job_dir in wav_jobs:
-            job = wav_jobs[job_dir]
+        for job_dir, job in wav_jobs.items():
             lines.append(
                 f"{job.wav_status.name:14}|{job.wav_last_on.name:15}|{job_dir}\n"
             )
