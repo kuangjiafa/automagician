@@ -419,6 +419,35 @@ class Database:
         if commit:
             self.db.connection.commit()
 
+    def add_gone_jobs_to_db(
+        self, jobs_to_add: list[GoneJob], commit: bool = True
+    ) -> None:
+        """Adds (or updates) a list of gone_jobs to the database.
+
+        Args:
+            jobs_to_add: The list of jobs to add to the database.
+            commit: Whether to commit the transaction. Committing the transaction
+                is slower, but is needed to allow the data to be persisted.
+                Turning this off is only recommended if you need to peform a
+                lot of database operations and will commit at the end of
+                peforming them."""
+        if not jobs_to_add:
+            return
+
+        # Bulk upsert: Delete existing entries first
+        dirs = [(job.old_dir,) for job in jobs_to_add]
+        self.db.executemany("delete from gone_jobs where dir = ?", dirs)
+
+        # Batch insert
+        insert_data = [
+            (job.old_dir, job.status.value, job.home_machine.value, job.last_on.value)
+            for job in jobs_to_add
+        ]
+        self.db.executemany("insert into gone_jobs values (?, ?, ?, ?)", insert_data)
+
+        if commit:
+            self.db.connection.commit()
+
     def add_gone_job_to_db(self, job_to_add: GoneJob, commit: bool = True) -> None:
         """Adds (or updates) a gone_job to the database.
 
@@ -429,32 +458,7 @@ class Database:
                 Turning this off is only recommended if you need to peform a
                 lot of database operations and will commit at the end of
                 peforming them."""
-        row_id = self.db.execute(
-            "select rowid from gone_jobs where dir = ?", [job_to_add.old_dir]
-        ).fetchone()
-        if row_id is not None:
-            self.db.execute(
-                "update gone_jobs set dir = ?, status = ?, home_machine = ?, last_on = ? where rowid = ?",
-                (
-                    job_to_add.old_dir,
-                    job_to_add.status.value,
-                    job_to_add.home_machine.value,
-                    job_to_add.last_on.value,
-                    row_id[0],
-                ),
-            )
-        else:
-            self.db.execute(
-                "insert into gone_jobs values (?, ?, ?, ?)",
-                [
-                    job_to_add.old_dir,
-                    job_to_add.status.value,
-                    job_to_add.home_machine.value,
-                    job_to_add.last_on.value,
-                ],
-            )
-        if commit:
-            self.db.connection.commit()
+        self.add_gone_jobs_to_db([job_to_add], commit=commit)
 
     def reset_job_status(self) -> None:
         """Sets the status of optimization jobs to 1 which means unconverged"""
