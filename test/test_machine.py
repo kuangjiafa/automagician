@@ -1,5 +1,7 @@
 import logging
 
+import pytest
+
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import *
 
@@ -48,3 +50,14 @@ def test_ssh_scp_init():
     assert isinstance(wo_fabric, SSHConfig)
     assert no_balance.config == "NoSSH"
     assert wo_fabric.config == "NoSSH"
+
+
+def test_get_machine_name():
+    assert get_machine_name(Machine.FRI) == "fri.cm.utexas.edu"
+    assert get_machine_name(Machine.HALIFAX) == "halifax.cm.utexas.edu"
+    assert get_machine_name(Machine.STAMPEDE2_TACC) == "stampede2.tacc.utexas.edu"
+    assert get_machine_name(Machine.FRONTERA_TACC) == "frontera.tacc.utexas.edu"
+    assert get_machine_name(Machine.LS6_TACC) == "ls6.tacc.utexas.edu"
+
+    with pytest.raises(ValueError, match="Invalid machine number"):
+        get_machine_name(Machine.UNKNOWN)
