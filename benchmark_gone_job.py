@@ -1,8 +1,6 @@
 import os
 import time
-import sqlite3
 import logging
-from typing import Dict, List
 from automagician.database import Database
 from automagician.classes import OptJob, GoneJob, JobStatus, Machine
 from automagician.process_job import gone_job_check

@@ -456,11 +456,11 @@ class Database:
 
         Args:
             jobs_to_add: The list of jobs to add to the database.
-            commit: Weither to commit the transaction. Committing the transaction
+            commit: Whether to commit the transaction. Committing the transaction
                 is slower, but is needed to allow the data to be persisted.
-                Turning this off is only recommended if you need to peform a
+                Turning this off is only recommended if you need to perform a
                 lot of database operations and will commit at the end of
-                peforming them."""
+                performing them."""
         if not jobs_to_add:
             return
 
