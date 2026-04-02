@@ -1,10 +1,11 @@
 import logging
 import os
 import sqlite3
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import automagician.small_functions as small_functions
-from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
+from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
+                                  WavJob)
 
 
 class Database:
@@ -124,10 +125,6 @@ class Database:
         """
         for job in self.db.execute(query):
             opt_id = job[0]
-            sc_status = JobStatus(job[1])
-            dos_status = JobStatus(job[2])
-            sc_last_on = Machine(job[3])
-            dos_last_on = Machine(job[4])
             opt_dir = job[5]
 
             # Skip orphaned rows where opt_jobs entry is missing
@@ -163,8 +160,6 @@ class Database:
         """
         for job in self.db.execute(query):
             opt_id = job[0]
-            wav_status = JobStatus(job[1])
-            wav_last_on = Machine(job[2])
             opt_dir = job[3]
 
             # Skip orphaned rows where opt_jobs entry is missing
@@ -212,8 +207,6 @@ class Database:
             dos_jobs: A collection of every dos_job known.
             wav_jobs: A collection of every wav_job known.
         """
-        import automagician.update_job as update_job
-
         logger = logging.getLogger()
         for job_dir in opt_jobs:
             self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
@@ -453,6 +446,39 @@ class Database:
                     job_to_add.last_on.value,
                 ],
             )
+        if commit:
+            self.db.connection.commit()
+
+    def add_gone_jobs_to_db(
+        self, jobs_to_add: List[GoneJob], commit: bool = True
+    ) -> None:
+        """Adds (or updates) multiple gone_jobs to the database.
+
+        Args:
+            jobs_to_add: The list of jobs to add to the database.
+            commit: Whether to commit the transaction. Committing the transaction
+                is slower, but is needed to allow the data to be persisted.
+                Turning this off is only recommended if you need to perform a
+                lot of database operations and will commit at the end of
+                performing them."""
+        if not jobs_to_add:
+            return
+
+        # Remove existing entries to perform a "bulk update" via delete + insert
+        dirs = [(job.old_dir,) for job in jobs_to_add]
+        self.db.executemany("DELETE FROM gone_jobs WHERE dir = ?", dirs)
+
+        data = [
+            (
+                job.old_dir,
+                job.status.value,
+                job.home_machine.value,
+                job.last_on.value,
+            )
+            for job in jobs_to_add
+        ]
+        self.db.executemany("INSERT INTO gone_jobs VALUES (?, ?, ?, ?)", data)
+
         if commit:
             self.db.connection.commit()
 
