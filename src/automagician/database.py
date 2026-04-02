@@ -208,8 +208,53 @@ class Database:
             wav_jobs: A collection of every wav_job known.
         """
         logger = logging.getLogger()
-        for job_dir in opt_jobs:
-            self.add_opt_job_to_db(opt_jobs[job_dir], job_dir, commit=False)
+
+        # Batch insert/update for opt_jobs
+        if opt_jobs:
+            dirs = list(opt_jobs.keys())
+            existing_opt_jobs = {}
+            chunk_size = 900
+            for i in range(0, len(dirs), chunk_size):
+                chunk = dirs[i : i + chunk_size]
+                placeholders = ",".join("?" * len(chunk))
+                for row in self.db.execute(
+                    f"select rowid, dir from opt_jobs where dir in ({placeholders})",
+                    chunk,
+                ):
+                    existing_opt_jobs[row[1]] = row[0]
+
+            update_data = []
+            insert_data = []
+            for job_dir, job in opt_jobs.items():
+                if job_dir in existing_opt_jobs:
+                    update_data.append(
+                        (
+                            job_dir,
+                            job.status.value,
+                            job.home_machine.value,
+                            job.last_on.value,
+                            existing_opt_jobs[job_dir],
+                        )
+                    )
+                else:
+                    insert_data.append(
+                        (
+                            job_dir,
+                            job.status.value,
+                            job.home_machine.value,
+                            job.last_on.value,
+                        )
+                    )
+
+            if update_data:
+                self.db.executemany(
+                    "update opt_jobs set dir = ?, status = ?, home_machine = ?, last_on = ? where rowid = ?",
+                    update_data,
+                )
+            if insert_data:
+                self.db.executemany(
+                    "insert into opt_jobs values (?, ?, ?, ?)", insert_data
+                )
 
         for job_dir in dos_jobs:
             opt_dir = small_functions.get_opt_dir(job_dir)
