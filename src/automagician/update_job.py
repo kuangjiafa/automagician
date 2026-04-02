@@ -80,18 +80,14 @@ def fix_error(
       True if a fix was attempted,
     Changes:
       Resubmits the job iff a fix was attempted"""
-    import automagician.finish_job as finish_job
-
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
-    import automagician.finish_job as finish_job
 
     for error_message in error_messages:
         if "ZBRENT" in error_message:
             contcar_path = os.path.join(job_directory, "CONTCAR")
             if not os.path.exists(contcar_path) or os.path.getsize(contcar_path) == 0:
                 return False
-            import automagician.finish_job as finish_job
 
             finish_job.wrap_up(job_directory)
             return True
