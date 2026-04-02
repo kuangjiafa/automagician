@@ -45,7 +45,12 @@ def wrap_up(job_directory: str) -> None:
     os.chdir(job_directory)
     try:
         directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
-        runs = [f for f in directories if "run" in f]
+        runs = [
+            f
+            for f in directories
+            if os.path.basename(f).startswith("run")
+            and os.path.basename(f)[3:].isdigit()
+        ]
         # if no runs, wrap up into run0
         if len(runs) == 0:
             subprocess.run(

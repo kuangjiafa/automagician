@@ -193,10 +193,9 @@ _SQUEUE_HEADER = "JOBID ST WORK_DIR"
 
 
 def _make_squeue_output(*job_lines):
-    # str(bytes_obj).split("\n") only works on real newlines, not \n in repr.
-    # _get_submitted_jobs_slurm does str(check_output(...)).split("\n"), so we
-    # mock check_output to return a plain string so str() is a no-op.
-    return "\n".join([_SQUEUE_HEADER] + list(job_lines) + [""])
+    # check_output returns bytes; our fixed production code does
+    # .decode("utf-8").splitlines(), so we mock with real bytes.
+    return "\n".join([_SQUEUE_HEADER] + list(job_lines) + [""]).encode("utf-8")
 
 
 def test_get_submitted_jobs_slurm_opt_running(tmp_path):
@@ -701,16 +700,20 @@ def _make_job_dir(tmp_path):
 def test_wrap_up_no_previous_runs_restores_cwd(tmp_path):
     cwd_before = os.getcwd()
     job_dir = _make_job_dir(tmp_path)
-    with patch("subprocess.run") as mock_run:
-        mock_run.return_value = MagicMock(returncode=0)
-        # wrap_up calls shutil.move after subprocess.run; ll_out -> run0
-        try:
-            wrap_up(job_dir)
-        except Exception:
-            pass
-    # CWD must always be restored
-    assert os.getcwd() == cwd_before
 
+    def fake_run(cmd, stdout, stderr):
+        # Simulate vfin.pl creating the destination run directory so wrap_up
+        # can complete successfully and we can verify CWD restoration.
+        run_dir = os.path.join(job_dir, cmd[1])
+        os.makedirs(run_dir, exist_ok=True)
+        return MagicMock(returncode=0)
+
+    with patch("subprocess.run", side_effect=fake_run):
+        wrap_up(job_dir)
+
+    # CWD must always be restored after a successful wrap_up
+    assert os.getcwd() == cwd_before
+    assert os.path.isfile(os.path.join(job_dir, "run0", "ll_out"))
 
 def test_wrap_up_subprocess_raises_restores_cwd(tmp_path):
     """Even if vfin.pl raises FileNotFoundError, CWD must be restored."""
@@ -754,16 +757,19 @@ def test_wrap_up_increments_run_number(tmp_path):
 
 
 def test_wrap_up_handles_non_numeric_run_dir(tmp_path):
-    """A directory named 'run' (no number) should not break the increment logic."""
+    """A directory named 'run' (no digits after prefix) is excluded from run
+    detection so wrap_up treats the job as having no prior runs and creates run0."""
     job_dir = _make_job_dir(tmp_path)
     os.makedirs(os.path.join(job_dir, "run"))  # no numeric suffix
 
     def fake_run(cmd, stdout, stderr):
         run_dir = os.path.join(job_dir, cmd[1])
         os.makedirs(run_dir, exist_ok=True)
+        return MagicMock(returncode=0)
 
     with patch("subprocess.run", side_effect=fake_run):
         wrap_up(job_dir)
 
-    # The 'run' dir has no number so largest_number should be 0, creating run0
+    # bare 'run' is excluded by the filter, so wrap_up creates run0
     assert os.path.isdir(os.path.join(job_dir, "run0"))
+    assert os.path.isfile(os.path.join(job_dir, "run0", "ll_out"))

@@ -565,10 +565,12 @@ def _get_submitted_jobs_slurm(
         wav_jobs: The collection of all wav jobs known by automagican
     """
     logger = logging.getLogger()
-    all_jobs = str(
+    all_jobs = (
         subprocess.check_output(["squeue", "-u", os.environ["USER"], "-o", "%A %t %Z"])
-    ).split("\n")
-    for job in all_jobs[1:-1]:
+        .decode("utf-8")
+        .splitlines()
+    )
+    for job in all_jobs[1:]:
         job_arr = job.split()
         job_id = job_arr[0]
         job_sstatus = job_arr[1]  # slurm's status code
@@ -792,15 +794,23 @@ def submit_queue(
         if machine is Machine.FRI or machine is Machine.HALIFAX:  # fri-halifax
             other_subfile = machine_file.get_subfile(Machine(1 - machine))
 
-            this_machine_job_count = len(
-                str(subprocess.run(["squeue"], capture_output=True).stdout).split(r"\n")
+            this_machine_job_count = max(
+                0,
+                len(
+                    subprocess.run(["squeue"], capture_output=True)
+                    .stdout.decode("utf-8")
+                    .splitlines()
+                )
+                - 1,  # subtract 1 for header
             )
             other_machine_job_count = 0
             if ssh_config.config == "NoSSH":
                 other_machine_job_count = 0
             elif isinstance(ssh_config.config, SshScp):
                 other_squeue_output = ssh_config.config.ssh.run("squeue", hide=True).stdout
-                other_machine_job_count = len(str(other_squeue_output).splitlines()) - 1
+                other_machine_job_count = max(
+                    0, len(str(other_squeue_output).splitlines()) - 1
+                )
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
