@@ -72,7 +72,7 @@ def get_error_message(job_directory: str) -> list[str]:
 def fix_error(
     job_directory: str,
 ) -> bool:
-    """Attempts to fix the error in job_direcory. Fixes ZBRINT, and number of potentials incompatable.
+    """Attempts to fix the error in job_direcory. Fixes ZBRENT, and number of potentials incompatable.
     Args:
       job_directory (str): A path to the directory that contains a job which has an error
       home_dir (str): A path that contains the files "/kingRaychardsArsenal/sogetsoftpbe.py" and "/kingRaychardsArsenal/sortpos.py"
