@@ -9,7 +9,7 @@ from automagician.process_job import get_submitted_jobs, submit_queue
 
 def fix_subprocess(*args, **kwargs):
     if args[0][0] == "squeue":
-        with open("test/test_files/sample_squeue", "r") as f:
+        with open("test/test_files/sample_squeue", "rb") as f:
             mock = MagicMock()
             mock.stdout = f.read()
             return mock
@@ -263,8 +263,8 @@ def test_submit_queue_2_jobs_acutally_submitted_hit_limit(monkeypatch, tmp_path)
 
 @patch("automagician.process_job.subprocess")
 def test_get_submitted_job_not_in_dictionary(monkeypatch):
-    mock_squeue = ""
-    with open("test/test_files/sample_squeue_submit_job", "r") as f:
+    mock_squeue = b""
+    with open("test/test_files/sample_squeue_submit_job", "rb") as f:
         mock_squeue = f.read()
     monkeypatch.check_output = MagicMock(return_value=mock_squeue)
     monkeypatch.call = MagicMock(return_value="")
@@ -350,8 +350,8 @@ def test_get_submitted_job_not_in_dictionary(monkeypatch):
 
 @patch("automagician.process_job.subprocess")
 def test_get_submitted_job_in_dictionary(monkeypatch):
-    mock_squeue = ""
-    with open("test/test_files/sample_squeue_submit_job", "r") as f:
+    mock_squeue = b""
+    with open("test/test_files/sample_squeue_submit_job", "rb") as f:
         mock_squeue = f.read()
     monkeypatch.check_output = MagicMock(return_value=mock_squeue)
     monkeypatch.call = MagicMock(return_value="")
@@ -477,7 +477,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
     3. No KeyError occurs when opt_jobs lacks the DOS job entry
     """
     # Mock subprocess to return empty squeue output (no jobs in queue)
-    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.check_output = MagicMock(return_value=b"")
     mock_subprocess.call = MagicMock(return_value="")
 
     # Setup: DOS job on STAMPEDE2 (machine 2) without a matching opt_job
@@ -515,7 +515,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting(mock_subprocess):
 def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     """Test DOS queue accounting on TACC with both SC and DOS running."""
     # Mock subprocess to return empty squeue output
-    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.check_output = MagicMock(return_value=b"")
     mock_subprocess.call = MagicMock(return_value="")
 
     dos_job_dir = "/home/test_user/test_job/dos"

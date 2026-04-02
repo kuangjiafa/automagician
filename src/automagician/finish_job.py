@@ -43,40 +43,48 @@ def wrap_up(job_directory: str) -> None:
     # first find name
     cwd = os.getcwd()
     os.chdir(job_directory)
-    directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
-    runs = [f for f in directories if "run" in f]
-    # if no runs, wrap up into run0
-    if len(runs) == 0:
-        subprocess.run(
-            [constants.V_FIN_PL_PATH, "run0"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        shutil.move(
-            os.path.join(job_directory, "ll_out"), os.path.join(job_directory, "run0")
-        )
-    else:
-        # find the largest run
-        largest_number = 0
-        for run in runs:
-            try:
-                number = int(run.partition("run")[2])
-                if number >= largest_number:
-                    largest_number = number + 1
-            except Exception:
-                continue
+    try:
+        directories = [f.path for f in os.scandir(job_directory) if f.is_dir()]
+        runs = [
+            f
+            for f in directories
+            if os.path.basename(f).startswith("run")
+            and os.path.basename(f)[3:].isdigit()
+        ]
+        # if no runs, wrap up into run0
+        if len(runs) == 0:
+            subprocess.run(
+                [constants.V_FIN_PL_PATH, "run0"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+            )
+            shutil.move(
+                os.path.join(job_directory, "ll_out"),
+                os.path.join(job_directory, "run0"),
+            )
+        else:
+            # find the largest run
+            largest_number = 0
+            for run in runs:
+                try:
+                    number = int(os.path.basename(run).partition("run")[2])
+                    if number >= largest_number:
+                        largest_number = number + 1
+                except Exception:
+                    continue
 
-        largest_run = f"run{largest_number}"
-        subprocess.run(
-            [constants.V_FIN_PL_PATH, largest_run],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.STDOUT,
-        )
-        shutil.move("ll_out", largest_run)
-        logger.warning("combine_XDAT_FE disabled due to bugs")
+            largest_run = f"run{largest_number}"
+            subprocess.run(
+                [constants.V_FIN_PL_PATH, largest_run],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+            )
+            shutil.move("ll_out", largest_run)
+            logger.warning("combine_XDAT_FE disabled due to bugs")
 
-    optimizer_review(job_directory)
-    os.chdir(cwd)
+        optimizer_review(job_directory)
+    finally:
+        os.chdir(cwd)
 
 
 def give_certificate(job_directory: str) -> int:
