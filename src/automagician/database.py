@@ -1,7 +1,7 @@
 import logging
 import os
 import sqlite3
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 import automagician.small_functions as small_functions
 from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
@@ -416,6 +416,34 @@ class Database:
                         job_to_add.wav_last_on.value,
                     ),
                 )
+        if commit:
+            self.db.connection.commit()
+
+    def add_gone_jobs_to_db(
+        self, jobs_to_add: List[GoneJob], commit: bool = True
+    ) -> None:
+        """Adds (or updates) multiple gone_jobs to the database in bulk.
+
+        Args:
+            jobs_to_add: The jobs to add to the database.
+            commit: Weither to commit the transaction. Committing the transaction
+                is slower, but is needed to allow the data to be persisted.
+                Turning this off is only recommended if you need to peform a
+                lot of database operations and will commit at the end of
+                peforming them."""
+        if not jobs_to_add:
+            return
+
+        # Delete existing entries to emulate upsert
+        dirs = [(j.old_dir,) for j in jobs_to_add]
+        self.db.executemany("delete from gone_jobs where dir = ?", dirs)
+
+        insert_data = [
+            (j.old_dir, j.status.value, j.home_machine.value, j.last_on.value)
+            for j in jobs_to_add
+        ]
+        self.db.executemany("insert into gone_jobs values (?, ?, ?, ?)", insert_data)
+
         if commit:
             self.db.connection.commit()
 
