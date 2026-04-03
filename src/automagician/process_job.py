@@ -27,8 +27,12 @@ from automagician.classes import (
 )
 
 if TYPE_CHECKING:
-    from automagician.classes import SshScp
     from automagician.database import Database
+
+try:
+    from automagician.classes import SshScp  # noqa: F811
+except ImportError:
+    pass
 
 
 def process_opt(
