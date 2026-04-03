@@ -16,32 +16,19 @@ import automagician.finish_job as finish_job
 import automagician.machine as machine_file
 import automagician.small_functions as small_functions
 import automagician.update_job as update_job
-from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
-                                  SSHConfig, WavJob)
+from automagician.classes import (
+    DosJob,
+    GoneJob,
+    JobStatus,
+    Machine,
+    OptJob,
+    SSHConfig,
+    WavJob,
+)
 
 if TYPE_CHECKING:
     from automagician.classes import SshScp
     from automagician.database import Database
-
-try:
-    from automagician.classes import SshScp  # noqa: F811
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
-except ImportError:
-    pass
 
 
 def process_opt(
@@ -94,7 +81,7 @@ def process_opt(
                 # mypy thinks config could be "NoSSH" here, but we checked above.
                 # However, scp_get_dir expects SshScp, which is not imported here to avoid cycles.
                 # Casting or ignoring for now as we know it's safe at runtime.
-                machine_file.scp_get_dir(
+                small_functions.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
@@ -799,14 +786,10 @@ def submit_queue(
             if ssh_config.config == "NoSSH":
                 other_machine_job_count = 0
             elif isinstance(ssh_config.config, SshScp):
-<<<<<<< fix-gone-jobs-n-plus-one-deletion-11609175292766959682
-                other_squeue_output = ssh_config.config.ssh.run("squeue", hide=True).stdout
+                other_squeue_output = ssh_config.config.ssh.run(
+                    "squeue", hide=True
+                ).stdout
                 other_machine_job_count = len(str(other_squeue_output).splitlines())
-=======
-                other_machine_job_count = int(
-                    ssh_config.config.ssh.run("squeue", hide=True).stdout
-                )
->>>>>>> main
             diff_in_size = this_machine_job_count - other_machine_job_count
             num_to_sub = len(sub_queue)
             num_to_sub_there = num_to_sub / 2 + diff_in_size
