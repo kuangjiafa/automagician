@@ -11,22 +11,25 @@ from typing import Literal
 try:
     from automagician.classes import SshScp
 
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
         """Puts files inside the remote directory to the local directory
 
         Args:
             remote: the directory on the remote machine to transfer files from
             local: the directory on the local machine to transfer files to
         """
-        for f in ssh_scp.ssh.run(
+        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
+        for f in real_ssh_scp.ssh.run(
             "cd " + shlex.quote(remote) + " && find . -type f | cut -c 2-"
         ).stdout.split("\n"):
             if len(f) < 1:
                 continue
-            ssh_scp.scp.get(remote + f, local + f)
+            real_ssh_scp.scp.get(remote + f, local + f)
 
 except ImportError:
-    pass
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+        pass
 
 
 IS_DOS_REGEX = re.compile(r".*?(?<!^/home)\/dos$")

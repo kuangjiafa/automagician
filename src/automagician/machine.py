@@ -242,36 +242,15 @@ def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
         os.chdir(cwd)
 
 
-if not no_fabric:
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-        remote (str): the directory on the remote machine to transfer files from
-        local (str): the directory on the local machine to transfer files to
-        """
-        # We assume ssh_scp is SshScp here, but we use object to match signature
-        # This is a bit of a hack to please mypy without importing SshScp globally if not available
-        real_ssh_scp: "SshScp" = ssh_scp  # type: ignore
-        for f in real_ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            real_ssh_scp.scp.get(remote + f, local + f)
-else:
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
-        pass
+from automagician.small_functions import scp_get_dir
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
     """Removes the lockfile and closes ssh if connected via SSH"""
     subprocess.call(["rm", constants.LOCK_FILE])
     if machine < 2 and ssh_config.config != "NoSSH":
-        ssh_config.config.ssh.run("rm " + shlex.quote(constants.LOCK_FILE))  # type: ignore
-        ssh_config.config.ssh.close()  # type: ignore
+        ssh_config.config.ssh.run("rm " + shlex.quote(constants.LOCK_FILE))
+        ssh_config.config.ssh.close()
     exit()
 
 

@@ -4,8 +4,7 @@ import sqlite3
 from typing import Dict, List, Optional
 
 import automagician.small_functions as small_functions
-from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
-                                  WavJob)
+from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, WavJob
 
 
 class Database:
