@@ -90,25 +90,31 @@ def ssh_scp_init(
 
 
 def get_machine_name(machine_number: Machine) -> str:
-    """Returns the name of the machine nane, or localhost if not found
+    """Returns the name of the machine name
     Args:
-      machine_number (int): The number of the machine
+      machine_number (Machine): The number of the machine
     Returns:
-      str: the name of the machine connected with machine_number, or localhost if none are connected
-        if 0 returns fri.cm.utexas.edu
-        if 1 returns halifax.cm.utexas.edu
-        if 2 returns stampede2.tacc.utexas.edu
-        if 3 returns frontera.tacc.utexas.edu
-        if 4 returns ls6.tacc.utexas.edu
-        if none of the above returns localhost
+      str: the name of the machine connected with machine_number
+        if Machine.FRI returns fri.cm.utexas.edu
+        if Machine.HALIFAX returns halifax.cm.utexas.edu
+        if Machine.STAMPEDE2_TACC returns stampede2.tacc.utexas.edu
+        if Machine.FRONTERA_TACC returns frontera.tacc.utexas.edu
+        if Machine.LS6_TACC returns ls6.tacc.utexas.edu
+    Raises:
+        ValueError: if the machine number is invalid or unknown
     """
-    return {
-        Machine.FRI: "fri.cm.utexas.edu",
-        Machine.HALIFAX: "halifax.cm.utexas.edu",
-        Machine.STAMPEDE2_TACC: "stampede2.tacc.utexas.edu",
-        Machine.FRONTERA_TACC: "frontera.tacc.utexas.edu",
-        Machine.LS6_TACC: "ls6.tacc.utexas.edu",
-    }.get(machine_number, "localhost")
+    if machine_number == Machine.FRI:
+        return "fri.cm.utexas.edu"
+    elif machine_number == Machine.HALIFAX:
+        return "halifax.cm.utexas.edu"
+    elif machine_number == Machine.STAMPEDE2_TACC:
+        return "stampede2.tacc.utexas.edu"
+    elif machine_number == Machine.FRONTERA_TACC:
+        return "frontera.tacc.utexas.edu"
+    elif machine_number == Machine.LS6_TACC:
+        return "ls6.tacc.utexas.edu"
+    else:
+        raise ValueError("Invalid machine number")
 
 
 def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
