@@ -6,7 +6,15 @@ import time
 
 import pytest
 
-from automagician.classes import DosJob, GoneJob, JobStatus, Machine, OptJob, SSHConfig
+from automagician.classes import (
+    DosJob,
+    GoneJob,
+    JobStatus,
+    Machine,
+    OptJob,
+    SSHConfig,
+    WavJob,
+)
 from automagician.database import Database
 from automagician.machine import get_subfile
 from automagician.process_job import (
@@ -14,6 +22,7 @@ from automagician.process_job import (
     check_has_opt,
     determine_box_convergence,
     determine_convergence,
+    get_submitted_jobs,
     gone_job_check,
     grep_ll_out_convergence,
     is_isif3,
@@ -716,6 +725,158 @@ def test_process_dos_failed_run(tmp_path):
     assert dos_jobs == {
         job_dir: DosJob(-1, JobStatus.INCOMPLETE, JobStatus.INCOMPLETE, 0, 0)
     }
+
+
+import unittest.mock as mock
+
+
+@mock.patch("subprocess.check_output")
+@mock.patch("subprocess.call")
+def test_get_submitted_jobs_fri(mock_call, mock_check_output):
+    # squeue output with header, one running job, and newline at the end
+    mock_check_output.return_value = "JOBID STATE WORKDIR\n12345 R /home/user/job1\n"
+
+    # machine 0 is FRI
+    machine = Machine.FRI
+    opt_jobs = {
+        "/home/user/job1": OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI),
+        "/home/user/job2": OptJob(JobStatus.CONVERGED, Machine.FRI, Machine.FRI),
+    }
+    dos_jobs = {
+        "/home/user/job3": DosJob(
+            opt_id=-1,
+            sc_status=JobStatus.RUNNING,
+            dos_status=JobStatus.RUNNING,
+            sc_last_on=Machine.FRI,
+            dos_last_on=Machine.FRI,
+        )
+    }
+    wav_jobs = {
+        "/home/user/job4": WavJob(
+            opt_id=-1, wav_status=JobStatus.RUNNING, wav_last_on=Machine.FRI
+        )
+    }
+    tacc_queue_sizes = [0, 0, 0]
+
+    # Mock classify_job_dir to say it's an opt job
+    with mock.patch(
+        "automagician.small_functions.classify_job_dir", return_value="opt"
+    ):
+        get_submitted_jobs(machine, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # All jobs previously RUNNING should be reset to INCOMPLETE before processing the slurm queue
+    assert (
+        opt_jobs["/home/user/job1"].status == JobStatus.RUNNING
+    )  # it gets updated to running by the mock squeue
+    assert opt_jobs["/home/user/job2"].status == JobStatus.CONVERGED
+    assert dos_jobs["/home/user/job3"].sc_status == JobStatus.INCOMPLETE
+    assert dos_jobs["/home/user/job3"].dos_status == JobStatus.INCOMPLETE
+    assert wav_jobs["/home/user/job4"].wav_status == JobStatus.INCOMPLETE
+
+
+@mock.patch("subprocess.check_output")
+@mock.patch("subprocess.call")
+def test_get_submitted_jobs_tacc(mock_call, mock_check_output):
+    # squeue output with header, one running job, and newline at the end
+    mock_check_output.return_value = "JOBID STATE WORKDIR\n12345 R /home/user/job1\n"
+
+    # machine 2 is STAMPEDE2_TACC
+    machine = Machine.STAMPEDE2_TACC
+    opt_jobs = {
+        "/home/user/job1": OptJob(
+            JobStatus.RUNNING, Machine.STAMPEDE2_TACC, Machine.STAMPEDE2_TACC
+        ),
+        "/home/user/job2": OptJob(
+            JobStatus.CONVERGED, Machine.STAMPEDE2_TACC, Machine.STAMPEDE2_TACC
+        ),
+    }
+    dos_jobs = {
+        "/home/user/job3": DosJob(
+            opt_id=-1,
+            sc_status=JobStatus.RUNNING,
+            dos_status=JobStatus.RUNNING,
+            sc_last_on=Machine.STAMPEDE2_TACC,
+            dos_last_on=Machine.STAMPEDE2_TACC,
+        )
+    }
+    wav_jobs = {
+        "/home/user/job4": WavJob(
+            opt_id=-1,
+            wav_status=JobStatus.INCOMPLETE,
+            wav_last_on=Machine.STAMPEDE2_TACC,
+        )
+    }
+    tacc_queue_sizes = [0, 0, 0]
+
+    # Mock classify_job_dir to say it's an opt job
+    with mock.patch(
+        "automagician.small_functions.classify_job_dir", return_value="opt"
+    ):
+        get_submitted_jobs(machine, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # Queue sizes should be updated based on running jobs
+    # wav job was incomplete so it increments counter and sets wav status to running
+    assert tacc_queue_sizes[0] == 4  # 1 opt + 2 dos (sc + dos) + 1 wav
+    assert tacc_queue_sizes[1] == 0
+    assert tacc_queue_sizes[2] == 0
+
+    # The job1 should be set back to RUNNING by the slurm queue parsing
+    assert opt_jobs["/home/user/job1"].status == JobStatus.RUNNING
+    assert opt_jobs["/home/user/job2"].status == JobStatus.CONVERGED
+    assert dos_jobs["/home/user/job3"].sc_status == JobStatus.INCOMPLETE
+    assert dos_jobs["/home/user/job3"].dos_status == JobStatus.INCOMPLETE
+    assert wav_jobs["/home/user/job4"].wav_status == JobStatus.RUNNING
+
+
+@mock.patch("subprocess.check_output")
+@mock.patch("subprocess.call")
+def test_get_submitted_jobs_squeue_parsing(mock_call, mock_check_output):
+    # squeue output with three jobs: 1 successful opt, 1 failing dos (OOM), 1 successful wav
+    mock_check_output.return_value = "JOBID STATE WORKDIR\n12345 R /home/user/job_opt\n67890 OOM /home/user/job_dos/dos\n11111 R /home/user/job_wav/wav\n"
+
+    machine = Machine.FRI
+    opt_jobs = {}
+    dos_jobs = {}
+    wav_jobs = {}
+    tacc_queue_sizes = [0, 0, 0]
+
+    # Need a side effect for classify_job_dir to classify based on dir name
+    def mock_classify(job_dir):
+        if "dos" in job_dir:
+            return "dos"
+        if "wav" in job_dir:
+            return "wav"
+        return "opt"
+
+    def mock_get_opt_dir(job_dir):
+        if "dos" in job_dir:
+            return "/home/user/job_dos"
+        if "wav" in job_dir:
+            return "/home/user/job_wav"
+        return job_dir
+
+    with mock.patch(
+        "automagician.small_functions.classify_job_dir", side_effect=mock_classify
+    ), mock.patch(
+        "automagician.small_functions.get_opt_dir", side_effect=mock_get_opt_dir
+    ):
+        get_submitted_jobs(machine, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # Scancel should be called for the failing job
+    mock_call.assert_called_with(["scancel", "67890"])
+
+    # Opt job should be created and running
+    assert "/home/user/job_opt" in opt_jobs
+    assert opt_jobs["/home/user/job_opt"].status == JobStatus.RUNNING
+
+    # Dos job should be created with dos in ERROR status
+    assert "/home/user/job_dos" in dos_jobs
+    assert dos_jobs["/home/user/job_dos"].dos_status == JobStatus.ERROR
+    # since we mocked dos specifically, sc_status is the default initialization
+
+    # Wav job should be created and running
+    assert "/home/user/job_wav" in wav_jobs
+    assert wav_jobs["/home/user/job_wav"].wav_status == JobStatus.RUNNING
 
 
 @pytest.mark.skip(reason="h2_sc_with_dos does not exist")
