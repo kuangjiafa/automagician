@@ -128,7 +128,6 @@ def process_opt(
     if is_running:
         logger.debug(f"job in {job_directory} is running, do nothing")
         step, force, energy = get_residueSFE(job_directory)
-        import automagician.update_job as update_job
 
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
@@ -150,7 +149,6 @@ def process_opt(
     if check_error(job_directory):
         logger.warning(f"job in {job_directory} failed!")
         opt_jobs[job_directory].status = JobStatus.ERROR
-        import automagician.update_job as update_job
 
         update_job.log_error(job_directory, home_dir)
         error_fixed = update_job.fix_error(
@@ -379,7 +377,6 @@ def process_unconverged(
         logger.debug("contcar exists -> wrap up")
         finish_job.wrap_up(job_directory)
         step, force, energy = get_residueSFE(job_directory)
-        import automagician.update_job as update_job
 
         update_job.add_preliminary_results(
             job_directory, step, force, energy, preliminary_results
