@@ -48,3 +48,13 @@ def test_ssh_scp_init():
     assert isinstance(wo_fabric, SSHConfig)
     assert no_balance.config == "NoSSH"
     assert wo_fabric.config == "NoSSH"
+
+
+def test_get_subfile():
+    assert get_subfile(Machine.FRI) == "fri.sub"
+    assert get_subfile(Machine.HALIFAX) == "halifax.sub"
+    assert get_subfile(Machine.STAMPEDE2_TACC) == "knl.mpi.slurm"
+    assert get_subfile(Machine.FRONTERA_TACC) == "clx.mpi.slurm"
+    assert get_subfile(Machine.LS6_TACC) == "milan.mpi.slurm"
+    assert get_subfile(Machine.UNKNOWN) == "INVALID"
+    assert get_subfile(None) == "INVALID"
