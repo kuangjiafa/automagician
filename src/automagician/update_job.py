@@ -95,7 +95,6 @@ def fix_error(
             "number of potentials on File POTCAR incompatible with number"
             in error_message
         ):
-            logger = logging.getLogger()
             cwd = os.getcwd()
             os.chdir(job_directory)
             try:
