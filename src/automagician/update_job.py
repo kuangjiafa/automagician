@@ -108,6 +108,11 @@ def fix_error(
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,
                 )
+            except FileNotFoundError as e:
+                logger.error(
+                    f"fix_error script not found for job at {job_directory}: {e}"
+                )
+                return False
             finally:
                 os.chdir(cwd)
             return True

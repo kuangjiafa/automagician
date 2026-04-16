@@ -371,7 +371,7 @@ class Database:
             ValueError: If there was not an opt_job at opt_dir"""
         if job_to_add.opt_id == -1:
             if opt_dir is None:
-                raise ValueError("dos job must either have an opt_id or an opt_dir")
+                raise ValueError("wav job must either have an opt_id or an opt_dir")
             opt_job_id = self.db.execute(
                 "SELECT rowid from opt_jobs WHERE dir = ?", [opt_dir]
             ).fetchone()

@@ -240,7 +240,7 @@ def determine_convergence(job_directory: str) -> bool:
     cwd = os.getcwd()
     os.chdir(job_directory)
     try:
-        subprocess.call("vef.pl", stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+        subprocess.call(["vef.pl"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
     finally:
         os.chdir(cwd)
     if not grep_ll_out_convergence(os.path.join(job_directory, "ll_out")):
@@ -565,11 +565,28 @@ def _get_submitted_jobs_slurm(
         wav_jobs: The collection of all wav jobs known by automagican
     """
     logger = logging.getLogger()
-    all_jobs = str(
-        subprocess.check_output(["squeue", "-u", os.environ["USER"], "-o", "%A %t %Z"])
-    ).split("\n")
-    for job in all_jobs[1:-1]:
+    try:
+        all_jobs = subprocess.check_output(
+            ["squeue", "-u", os.environ["USER"], "-o", "%A %t %Z"],
+            stderr=subprocess.STDOUT,
+            text=True,
+        ).splitlines()
+    except subprocess.CalledProcessError as e:
+        output = e.output if isinstance(e.output, str) else e.output.decode(errors="replace")
+        logger.error(f"squeue command failed (exit {e.returncode}): {output}")
+        raise RuntimeError(
+            f"Unable to query submitted jobs with squeue (exit {e.returncode})"
+        ) from e
+    except FileNotFoundError as e:
+        logger.error("squeue not found; is SLURM available on this machine?")
+        raise RuntimeError(
+            "Unable to query submitted jobs because squeue is not available"
+        ) from e
+    for job in all_jobs[1:]:
         job_arr = job.split()
+        if len(job_arr) < 3:
+            logger.debug(f"skipping malformed squeue line: {job!r}")
+            continue
         job_id = job_arr[0]
         job_sstatus = job_arr[1]  # slurm's status code
         job_dir = job_arr[2]
