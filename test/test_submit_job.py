@@ -1,5 +1,7 @@
 # pylint: disable=all
+import logging
 import os
+import subprocess as _subprocess_real
 from unittest.mock import MagicMock, call, patch
 
 from automagician.classes import DosJob, JobStatus, Machine, OptJob, SSHConfig, WavJob
@@ -549,3 +551,148 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     assert dos_jobs[dos_job_dir].dos_status == JobStatus.INCOMPLETE
     # SC should remain RUNNING since on different machine (FRONTERA)
     assert dos_jobs[dos_job_dir].sc_status == JobStatus.RUNNING
+
+
+# ---------------------------------------------------------------------------
+# sacct integration tests
+# ---------------------------------------------------------------------------
+
+def _make_sacct_result(stdout: str, returncode: int = 0) -> MagicMock:
+    """Helper: build a mock subprocess.run result for a sacct call."""
+    result = MagicMock()
+    result.returncode = returncode
+    result.stdout = stdout
+    result.stderr = ""
+    return result
+
+
+def _empty_squeue_mock() -> MagicMock:
+    """squeue output with only a header line — no running jobs."""
+    return MagicMock(return_value="")
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_sacct_warns_on_node_fail(mock_subprocess, caplog):
+    """A job that vanishes from squeue with a NODE_FAIL sacct record emits a WARNING."""
+    job_dir = "/home/user/test_job_nf"
+
+    mock_subprocess.check_output = _empty_squeue_mock()
+    mock_subprocess.call = MagicMock(return_value=0)
+    mock_subprocess.TimeoutExpired = _subprocess_real.TimeoutExpired
+    mock_subprocess.run = MagicMock(
+        return_value=_make_sacct_result(
+            f"12345|NODE_FAIL|{job_dir}|0:9|0:9|c401-001||01:23:45\n"
+        )
+    )
+
+    opt_jobs = {job_dir: OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI)}
+
+    with caplog.at_level(logging.WARNING):
+        get_submitted_jobs(Machine.FRI, opt_jobs, {}, {}, [0, 0, 0])
+
+    warning_texts = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+    assert any("NODE_FAIL" in m for m in warning_texts), warning_texts
+    assert any(job_dir in m for m in warning_texts), warning_texts
+    # sacct logging does not alter job status — processing continues normally
+    assert opt_jobs[job_dir].status == JobStatus.INCOMPLETE
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_sacct_warns_on_oom(mock_subprocess, caplog):
+    """A job that vanishes from squeue with an OUT_OF_MEMORY sacct record emits a WARNING."""
+    job_dir = "/home/user/test_job_oom"
+
+    mock_subprocess.check_output = _empty_squeue_mock()
+    mock_subprocess.call = MagicMock(return_value=0)
+    mock_subprocess.TimeoutExpired = _subprocess_real.TimeoutExpired
+    mock_subprocess.run = MagicMock(
+        return_value=_make_sacct_result(
+            f"99999|OUT_OF_MEMORY|{job_dir}|0:125|0:125|||00:30:00\n"
+        )
+    )
+
+    opt_jobs = {job_dir: OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI)}
+
+    with caplog.at_level(logging.WARNING):
+        get_submitted_jobs(Machine.FRI, opt_jobs, {}, {}, [0, 0, 0])
+
+    warning_texts = [r.message for r in caplog.records if r.levelno == logging.WARNING]
+    assert any("OUT_OF_MEMORY" in m for m in warning_texts), warning_texts
+    assert any(job_dir in m for m in warning_texts), warning_texts
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_sacct_no_warning_for_completed(mock_subprocess, caplog):
+    """A job that vanishes from squeue but sacct reports COMPLETED emits no sacct WARNING."""
+    job_dir = "/home/user/test_job_ok"
+
+    mock_subprocess.check_output = _empty_squeue_mock()
+    mock_subprocess.call = MagicMock(return_value=0)
+    mock_subprocess.TimeoutExpired = _subprocess_real.TimeoutExpired
+    mock_subprocess.run = MagicMock(
+        return_value=_make_sacct_result(
+            f"11111|COMPLETED|{job_dir}|0:0|0:0|||02:00:00\n"
+        )
+    )
+
+    opt_jobs = {job_dir: OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI)}
+
+    with caplog.at_level(logging.WARNING):
+        get_submitted_jobs(Machine.FRI, opt_jobs, {}, {}, [0, 0, 0])
+
+    sacct_warnings = [
+        r.message for r in caplog.records
+        if r.levelno == logging.WARNING and "sacct:" in r.message
+    ]
+    assert sacct_warnings == [], sacct_warnings
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_sacct_timeout_no_crash(mock_subprocess, caplog):
+    """When sacct times out, get_submitted_jobs does not raise and emits no failure WARNING."""
+    job_dir = "/home/user/test_job_sacct_timeout"
+
+    mock_subprocess.check_output = _empty_squeue_mock()
+    mock_subprocess.call = MagicMock(return_value=0)
+    mock_subprocess.TimeoutExpired = _subprocess_real.TimeoutExpired
+    mock_subprocess.run = MagicMock(
+        side_effect=_subprocess_real.TimeoutExpired(["sacct"], 30)
+    )
+
+    opt_jobs = {job_dir: OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI)}
+
+    # Must not raise
+    with caplog.at_level(logging.WARNING):
+        get_submitted_jobs(Machine.FRI, opt_jobs, {}, {}, [0, 0, 0])
+
+    sacct_failure_warnings = [
+        r.message for r in caplog.records
+        if r.levelno == logging.WARNING and "sacct:" in r.message
+        and any(s in r.message for s in ("NODE_FAIL", "TIMEOUT", "FAILED", "OUT_OF_MEMORY", "BOOT_FAIL", "PREEMPTED"))
+    ]
+    assert sacct_failure_warnings == [], sacct_failure_warnings
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_sacct_nonzero_exit_no_crash(mock_subprocess, caplog):
+    """When sacct returns a non-zero exit code, no failure WARNING is emitted and no crash occurs."""
+    job_dir = "/home/user/test_job_sacct_err"
+
+    mock_subprocess.check_output = _empty_squeue_mock()
+    mock_subprocess.call = MagicMock(return_value=0)
+    mock_subprocess.TimeoutExpired = _subprocess_real.TimeoutExpired
+    mock_subprocess.run = MagicMock(
+        return_value=_make_sacct_result("", returncode=1)
+    )
+
+    opt_jobs = {job_dir: OptJob(JobStatus.RUNNING, Machine.FRI, Machine.FRI)}
+
+    with caplog.at_level(logging.WARNING):
+        get_submitted_jobs(Machine.FRI, opt_jobs, {}, {}, [0, 0, 0])
+
+    sacct_failure_warnings = [
+        r.message for r in caplog.records
+        if r.levelno == logging.WARNING and "sacct:" in r.message
+        and any(s in r.message for s in ("NODE_FAIL", "TIMEOUT", "FAILED", "OUT_OF_MEMORY", "BOOT_FAIL", "PREEMPTED"))
+    ]
+    assert sacct_failure_warnings == [], sacct_failure_warnings
