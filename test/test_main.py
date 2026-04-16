@@ -1,5 +1,4 @@
 # pylint: disable=all
-import os
 from unittest.mock import MagicMock, patch
 
 from automagician.main import main_wrapper, set_up_parser
@@ -14,7 +13,7 @@ def make_args(**kwargs):
     return args
 
 
-def _mock_database(tmp_path):
+def _mock_database():
     """Return a MagicMock shaped like Database with empty job dicts."""
     db = MagicMock()
     db.get_opt_jobs.return_value = {}
@@ -40,7 +39,7 @@ def test_init_failure_get_machine_returns_cleanly(mock_get_machine):
 @patch("automagician.main.machine_file.automagic_exit")
 @patch("automagician.main.machine_file.get_machine_number", side_effect=KeyError("HOME"))
 def test_init_failure_does_not_call_automagic_exit(mock_get_machine, mock_exit):
-    """When init fails we have no lockfile, so automagic_exit must not be called."""
+    """When the lockfile was never written, automagic_exit must not be called."""
     args = make_args()
     main_wrapper(args)
     mock_exit.assert_not_called()
@@ -55,27 +54,28 @@ def test_init_failure_does_not_submit_queue(mock_get_machine, mock_submit):
     mock_submit.assert_not_called()
 
 
+@patch("automagician.main.machine_file.automagic_exit")
+@patch("automagician.main.machine_file.write_lockfile")
+@patch("automagician.main.machine_file.ssh_scp_init")
+@patch("automagician.main.machine_file.get_machine_number", return_value=0)
+def test_init_failure_after_lockfile_calls_automagic_exit(
+    mock_machine, mock_ssh_init, mock_lockfile, mock_exit, tmp_path
+):
+    """If init fails after the lockfile is written, automagic_exit must release it."""
+    mock_ssh = MagicMock()
+    mock_ssh.config = "NoSSH"
+    mock_ssh_init.return_value = mock_ssh
+    # Database raises — lockfile was already written at this point.
+    with patch("automagician.main.Database", side_effect=RuntimeError("db failed")):
+        with patch.dict("os.environ", {"HOME": str(tmp_path)}):
+            args = make_args()
+            main_wrapper(args)
+    mock_exit.assert_called_once()
+
+
 # ---------------------------------------------------------------------------
 # Phase 2 (execution) failure tests
 # ---------------------------------------------------------------------------
-
-
-def _patch_init(tmp_path):
-    """Return a dict of patches that makes Phase 1 succeed."""
-    mock_ssh = MagicMock()
-    mock_ssh.config = "NoSSH"
-
-    patches = {
-        "automagician.main.machine_file.get_machine_number": MagicMock(return_value=0),
-        "automagician.main.machine_file.ssh_scp_init": MagicMock(return_value=mock_ssh),
-        "automagician.main.machine_file.write_lockfile": MagicMock(),
-        "automagician.main.machine_file.automagic_exit": MagicMock(),
-        "automagician.main.Database": MagicMock(return_value=_mock_database(tmp_path)),
-        "automagician.main.process_job.get_submitted_jobs": MagicMock(),
-        "automagician.main.process_job.gone_job_check": MagicMock(),
-        "automagician.main.process_job.submit_queue": MagicMock(),
-    }
-    return patches
 
 
 @patch("automagician.main.machine_file.automagic_exit")
@@ -106,13 +106,14 @@ def test_execution_failure_in_finally_does_not_raise(
     mock_ssh = MagicMock()
     mock_ssh.config = "NoSSH"
     mock_ssh_init.return_value = mock_ssh
-    MockDatabase.return_value = _mock_database(tmp_path)
+    MockDatabase.return_value = _mock_database()
 
     # Fail on first call (inner finally), succeed on second (outer except).
     mock_submit.side_effect = [RuntimeError("sbatch gone"), None]
 
     args = make_args()
-    main_wrapper(args)  # must not raise
+    with patch.dict("os.environ", {"HOME": str(tmp_path)}):
+        main_wrapper(args)  # must not raise
 
 
 @patch("automagician.main.machine_file.automagic_exit")
@@ -138,10 +139,11 @@ def test_execution_failure_calls_automagic_exit(
     mock_ssh = MagicMock()
     mock_ssh.config = "NoSSH"
     mock_ssh_init.return_value = mock_ssh
-    MockDatabase.return_value = _mock_database(tmp_path)
+    MockDatabase.return_value = _mock_database()
     mock_submit.side_effect = [RuntimeError("sbatch gone"), None]
 
     args = make_args()
-    main_wrapper(args)
+    with patch.dict("os.environ", {"HOME": str(tmp_path)}):
+        main_wrapper(args)
 
     mock_exit.assert_called()
