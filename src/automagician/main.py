@@ -216,6 +216,12 @@ def main_wrapper(args: argparse.Namespace) -> None:
     sub_queue: list[str] = []
     set_up_logger(args.silent, args.verbose)
     logger = logging.getLogger()
+
+    # Phase 1: initialization. Some setup side effects, such as lockfile
+    # creation and database initialization, may already have occurred by the
+    # time a later step fails, so we track whether the lockfile was written and
+    # release it on failure before returning.
+    lockfile_written = False
     try:
         machine = machine_file.get_machine_number()
         home = (
@@ -226,6 +232,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
         ssh_config = machine_file.ssh_scp_init(machine, home, args.balance, logger)
         logger.debug(f"ssh_config is {str(ssh_config.config)}")
         machine_file.write_lockfile(ssh_config, machine)
+        lockfile_written = True
         database = Database(os.path.join(home, constants.DB_NAME))
         opt_jobs = database.get_opt_jobs()
         dos_jobs = database.get_dos_jobs()
@@ -242,8 +249,17 @@ def main_wrapper(args: argparse.Namespace) -> None:
             os.path.join(home, constants.PRELIMINARY_RESULTS_NAME), "w"
         )
         process_job.gone_job_check(database, opt_jobs)
+    except Exception:
+        logger.error("Failed to initialize automagician. Cannot continue.")
+        traceback.print_exc()
+        if lockfile_written:
+            machine_file.automagic_exit(machine, ssh_config)
+        return
 
-        hit_limit = False
+    # Phase 2: execution. All variables above are guaranteed to be initialized,
+    # so the recovery handler can safely reference them.
+    hit_limit = False
+    try:
         try:
             if args.reset_converged:
                 logger.warning("Reset converged is not working with sql database")
@@ -334,10 +350,6 @@ def main_wrapper(args: argparse.Namespace) -> None:
             database.db.close()
             machine_file.automagic_exit(machine, ssh_config)
     except Exception:
-        if (
-            sys.exc_info()[0] is not None and sys.exc_info()[0].__name__ == "SystemExit"  # type: ignore
-        ):
-            exit()
         logger.error(
             "An error occurred when processing an automagician job. Will wrap up and exit"
         )
