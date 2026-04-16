@@ -549,3 +549,95 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
     assert dos_jobs[dos_job_dir].dos_status == JobStatus.INCOMPLETE
     # SC should remain RUNNING since on different machine (FRONTERA)
     assert dos_jobs[dos_job_dir].sc_status == JobStatus.RUNNING
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_tacc_wav_running_on_current_machine(mock_subprocess):
+    """A RUNNING wav job on the current TACC machine should decrement its queue
+    slot (increment tacc_queue_sizes) and be reset to INCOMPLETE so it gets
+    reprocessed next cycle.
+
+    Before the fix, the condition checked INCOMPLETE instead of RUNNING, so
+    running wav jobs were never reset and stayed stuck at RUNNING forever.
+    """
+    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.call = MagicMock(return_value="")
+
+    wav_job_dir = "/home/test_user/test_job"
+    wav_jobs = {
+        wav_job_dir: WavJob(
+            opt_id=-1,
+            wav_status=JobStatus.RUNNING,
+            wav_last_on=Machine.STAMPEDE2_TACC,  # value 2, tacc_queue_sizes[0]
+        )
+    }
+    opt_jobs = {}
+    dos_jobs = {}
+    tacc_queue_sizes = [0, 0, 0]
+
+    get_submitted_jobs(Machine.STAMPEDE2_TACC, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # Queue slot must be counted.
+    assert tacc_queue_sizes == [1, 0, 0]
+    # Job must be reset to INCOMPLETE so process_wav picks it up next cycle.
+    assert wav_jobs[wav_job_dir].wav_status == JobStatus.INCOMPLETE
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_tacc_wav_running_on_other_machine(mock_subprocess):
+    """A RUNNING wav job on a *different* TACC machine should still count
+    toward that machine's queue slot but must NOT be reset to INCOMPLETE
+    (we can't verify its state from this machine).
+    """
+    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.call = MagicMock(return_value="")
+
+    wav_job_dir = "/home/test_user/test_job"
+    wav_jobs = {
+        wav_job_dir: WavJob(
+            opt_id=-1,
+            wav_status=JobStatus.RUNNING,
+            wav_last_on=Machine.FRONTERA_TACC,  # value 3, tacc_queue_sizes[1]
+        )
+    }
+    opt_jobs = {}
+    dos_jobs = {}
+    tacc_queue_sizes = [0, 0, 0]
+
+    # Running on STAMPEDE2 but wav job is on FRONTERA.
+    get_submitted_jobs(Machine.STAMPEDE2_TACC, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # FRONTERA slot (index 1) incremented.
+    assert tacc_queue_sizes == [0, 1, 0]
+    # Status must remain RUNNING — we don't own this slot.
+    assert wav_jobs[wav_job_dir].wav_status == JobStatus.RUNNING
+
+
+@patch("automagician.process_job.subprocess")
+def test_get_submitted_jobs_tacc_wav_incomplete_not_counted(mock_subprocess):
+    """An INCOMPLETE wav job must NOT increment tacc_queue_sizes.
+
+    Before the fix, the condition was inverted: INCOMPLETE jobs were counted
+    and then promoted to RUNNING, silently inflating queue counts.
+    """
+    mock_subprocess.check_output = MagicMock(return_value="")
+    mock_subprocess.call = MagicMock(return_value="")
+
+    wav_job_dir = "/home/test_user/test_job"
+    wav_jobs = {
+        wav_job_dir: WavJob(
+            opt_id=-1,
+            wav_status=JobStatus.INCOMPLETE,
+            wav_last_on=Machine.STAMPEDE2_TACC,
+        )
+    }
+    opt_jobs = {}
+    dos_jobs = {}
+    tacc_queue_sizes = [0, 0, 0]
+
+    get_submitted_jobs(Machine.STAMPEDE2_TACC, opt_jobs, dos_jobs, wav_jobs, tacc_queue_sizes)
+
+    # Counter must stay zero — the job isn't running.
+    assert tacc_queue_sizes == [0, 0, 0]
+    # Status must remain INCOMPLETE — must not be promoted to RUNNING.
+    assert wav_jobs[wav_job_dir].wav_status == JobStatus.INCOMPLETE

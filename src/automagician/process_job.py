@@ -688,12 +688,12 @@ def get_submitted_jobs(
                 if dos_jobs[job_dir].dos_last_on == machine:
                     dos_jobs[job_dir].dos_status = JobStatus.INCOMPLETE
         for job_dir in wav_jobs:
-            if wav_jobs[job_dir].wav_status == JobStatus.INCOMPLETE:
+            if wav_jobs[job_dir].wav_status == JobStatus.RUNNING:
                 tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] = (
                     tacc_queue_sizes[wav_jobs[job_dir].wav_last_on - 2] + 1
                 )
                 if wav_jobs[job_dir].wav_last_on == machine:
-                    wav_jobs[job_dir].wav_status = JobStatus.RUNNING
+                    wav_jobs[job_dir].wav_status = JobStatus.INCOMPLETE
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
 
 
