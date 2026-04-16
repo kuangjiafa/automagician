@@ -553,7 +553,7 @@ def test_get_submitted_jobs_tacc_dos_queue_accounting_with_sc(mock_subprocess):
 
 @patch("automagician.process_job.subprocess")
 def test_get_submitted_jobs_tacc_wav_running_on_current_machine(mock_subprocess):
-    """A RUNNING wav job on the current TACC machine should decrement its queue
+    """A RUNNING wav job on the current TACC machine should count toward a queue
     slot (increment tacc_queue_sizes) and be reset to INCOMPLETE so it gets
     reprocessed next cycle.
 
