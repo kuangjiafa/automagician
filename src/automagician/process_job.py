@@ -7,8 +7,9 @@ import shlex
 import shutil
 import subprocess
 import traceback
+from dataclasses import dataclass
 from os.path import exists
-from typing import TYPE_CHECKING, Dict, List, TextIO, Tuple, cast
+from typing import TYPE_CHECKING, Dict, List, Optional, TextIO, Tuple, cast
 
 import automagician.constants as constants
 import automagician.create_job as create_job
@@ -42,6 +43,26 @@ try:
 
 except ImportError:
     pass
+
+
+@dataclass
+class SacctRecord:
+    """Accounting information for a completed Slurm job, as returned by sacct."""
+
+    job_id: str
+    state: str  # e.g. COMPLETED, FAILED, TIMEOUT, NODE_FAIL, OUT_OF_MEMORY
+    exit_code: str  # format "code:signal", e.g. "1:0"
+    derived_exit_code: str  # highest exit code across all job steps
+    failed_node: str  # node whose failure caused termination, if any
+    max_rss: str  # peak resident set size (may be empty when using -X)
+    elapsed: str  # wall time in [DD-]HH:MM:SS
+
+
+# Slurm terminal states that indicate a cluster- or resource-level failure
+# rather than a normal job completion.
+_SLURM_ERROR_STATES = frozenset(
+    {"FAILED", "TIMEOUT", "NODE_FAIL", "OUT_OF_MEMORY", "BOOT_FAIL", "PREEMPTED"}
+)
 
 
 def process_opt(
@@ -538,6 +559,110 @@ def process_wav(
         # wav_jobs[job_directory].wav_status = -1
 
 
+def query_sacct(dirs: List[str]) -> Dict[str, SacctRecord]:
+    """Queries sacct for recent jobs matching the given working directories.
+
+    Runs sacct for the current user over the past 7 days and matches records
+    by working directory. For directories with multiple recent jobs the
+    last-seen record wins (sacct returns records in submission order).
+
+    Uses ``-X`` (``--allocations``) so each job produces exactly one row.
+    MaxRSS is tracked at the step level and will be empty in this output;
+    the field is included for forward-compatibility if that changes.
+
+    Args:
+        dirs: Working directory paths to look up in the accounting database.
+
+    Returns:
+        Dict mapping working directory to its most recent SacctRecord.
+        Directories not found in sacct and systems without sacct are omitted.
+    """
+    if not dirs:
+        return {}
+
+    logger = logging.getLogger()
+    try:
+        result = subprocess.run(
+            [
+                "sacct",
+                "--user", os.environ["USER"],
+                "--starttime", "now-7days",
+                "--format", "JobID,State,WorkDir,ExitCode,DerivedExitCode,FailedNode,MaxRSS,Elapsed",
+                "--parsable2",
+                "--noheader",
+                "-X",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except FileNotFoundError:
+        logger.debug("sacct not available on this system")
+        return {}
+    except subprocess.TimeoutExpired:
+        logger.warning("sacct query timed out after 30 seconds")
+        return {}
+
+    if result.returncode != 0:
+        logger.warning(f"sacct exited with code {result.returncode}: {result.stderr.strip()}")
+        return {}
+
+    dir_set = set(dirs)
+    records: Dict[str, SacctRecord] = {}
+
+    for line in result.stdout.splitlines():
+        parts = line.split("|")
+        if len(parts) < 8:
+            continue
+        job_id, state, work_dir, exit_code, derived_exit_code, failed_node, max_rss, elapsed = (
+            parts[:8]
+        )
+        # CANCELLED states include a "by <uid>" suffix; strip it.
+        state = state.split()[0] if state else state
+        if work_dir in dir_set:
+            records[work_dir] = SacctRecord(
+                job_id=job_id,
+                state=state,
+                exit_code=exit_code,
+                derived_exit_code=derived_exit_code,
+                failed_node=failed_node,
+                max_rss=max_rss,
+                elapsed=elapsed,
+            )
+
+    return records
+
+
+def _log_sacct_failures(dirs: List[str]) -> None:
+    """Queries sacct for dirs that recently left the queue and logs Slurm-level failures.
+
+    Only logs directories whose sacct state is in ``_SLURM_ERROR_STATES``.
+    Silently skips directories not found in sacct (e.g. jobs still pending,
+    or clusters where sacct/slurmdbd is not configured).
+
+    Args:
+        dirs: Working directory paths for jobs that were RUNNING but are no
+            longer visible in squeue.
+    """
+    logger = logging.getLogger()
+    records = query_sacct(dirs)
+    for work_dir, record in records.items():
+        if record.state in _SLURM_ERROR_STATES:
+            details: List[str] = [
+                f"state={record.state}",
+                f"exit_code={record.exit_code}",
+                f"elapsed={record.elapsed}",
+            ]
+            if record.failed_node:
+                details.append(f"failed_node={record.failed_node}")
+            if record.max_rss and record.max_rss not in ("", "0"):
+                details.append(f"max_rss={record.max_rss}")
+            logger.warning(
+                f"sacct: job in {work_dir} (id={record.job_id}) terminated with "
+                + ", ".join(details)
+            )
+
+
 def _get_submitted_jobs_slurm(
     machine: Machine,
     opt_jobs: Dict[str, OptJob],
@@ -671,6 +796,21 @@ def get_submitted_jobs(
         tacc_queue_sizes: Shows howmany jobs this user has submitted to TACC
     """
     if machine in [0, 1]:  # fri
+        # Snapshot which working dirs were RUNNING before we reset them.
+        # For dos/wav the working dir is a subdirectory of the opt dir.
+        running_working_dirs: Dict[str, Tuple[str, str]] = {}  # workdir -> (dict_key, job_type)
+        for d, j in opt_jobs.items():
+            if j.status == JobStatus.RUNNING:
+                running_working_dirs[d] = (d, "opt")
+        for d, j in dos_jobs.items():
+            if j.sc_status == JobStatus.RUNNING:
+                running_working_dirs[os.path.join(d, "sc")] = (d, "sc")
+            if j.dos_status == JobStatus.RUNNING:
+                running_working_dirs[os.path.join(d, "dos")] = (d, "dos")
+        for d, j in wav_jobs.items():
+            if j.wav_status == JobStatus.RUNNING:
+                running_working_dirs[os.path.join(d, "wav")] = (d, "wav")
+
         for job_dir in opt_jobs:
             if opt_jobs[job_dir].status == JobStatus.RUNNING:
                 opt_jobs[job_dir].status = JobStatus.INCOMPLETE
@@ -683,6 +823,24 @@ def get_submitted_jobs(
             if wav_jobs[job_dir].wav_status == JobStatus.RUNNING:
                 wav_jobs[job_dir].wav_status = JobStatus.INCOMPLETE
         _get_submitted_jobs_slurm(machine, opt_jobs, dos_jobs, wav_jobs)
+
+        # Find dirs that were RUNNING but are no longer in squeue (disappeared).
+        # Query sacct to surface any Slurm-level failure reasons for these jobs.
+        if running_working_dirs:
+            disappeared: List[str] = []
+            for work_dir, (key, jtype) in running_working_dirs.items():
+                still_running: bool
+                if jtype == "opt":
+                    still_running = key in opt_jobs and opt_jobs[key].status == JobStatus.RUNNING
+                elif jtype == "sc":
+                    still_running = key in dos_jobs and dos_jobs[key].sc_status == JobStatus.RUNNING
+                elif jtype == "dos":
+                    still_running = key in dos_jobs and dos_jobs[key].dos_status == JobStatus.RUNNING
+                else:  # wav
+                    still_running = key in wav_jobs and wav_jobs[key].wav_status == JobStatus.RUNNING
+                if not still_running:
+                    disappeared.append(work_dir)
+            _log_sacct_failures(disappeared)
     else:  # tacc
         for job_dir in opt_jobs:
             if opt_jobs[job_dir].status == JobStatus.RUNNING:
