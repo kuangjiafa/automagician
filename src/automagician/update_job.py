@@ -95,6 +95,7 @@ def fix_error(
             "number of potentials on File POTCAR incompatible with number"
             in error_message
         ):
+            logger = logging.getLogger()
             cwd = os.getcwd()
             os.chdir(job_directory)
             try:
@@ -108,6 +109,11 @@ def fix_error(
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.STDOUT,
                 )
+            except FileNotFoundError as e:
+                logger.error(
+                    f"fix_error script not found for job at {job_directory}: {e}"
+                )
+                return False
             finally:
                 os.chdir(cwd)
             return True
