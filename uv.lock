@@ -65,6 +65,11 @@ remote = [
     { name = "fabric" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pylint" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "fabric", marker = "extra == 'remote'" },
@@ -78,6 +83,9 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'docs'", specifier = ">=7" },
 ]
 provides-extras = ["dev", "remote", "docs"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pylint", specifier = ">=4.0.5" }]
 
 [[package]]
 name = "babel"
