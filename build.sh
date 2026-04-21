@@ -15,7 +15,7 @@ clean(){
 
 create() {
     echo "creating venv"
-    uv venv
+    uv venv .venv
     echo "leaving create"
 }
 
