@@ -19,4 +19,4 @@ jobs:
         uv sync --system-certs --locked --extra dev --extra remote
     - name: Analysing the code with pylint
       run: |
-        pylint --errors-only src test
+        uv run pylint --errors-only src test
