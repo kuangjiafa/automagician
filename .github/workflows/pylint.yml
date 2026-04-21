@@ -10,15 +10,14 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
     steps:
     - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v4
       with:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-        pip install .[dev,remote]
+        uv pip install --system pylint
+        uv pip install --system .[dev,remote]
     - name: Analysing the code with pylint
       run: |
         pylint --errors-only src test
