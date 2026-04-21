@@ -27,7 +27,8 @@ if TYPE_CHECKING:
 try:
     from automagician.classes import SshScp  # noqa: F811
 except ImportError:
-    pass
+    class SshScp:  # type: ignore[no-redef]
+        pass
 
 
 @dataclass
