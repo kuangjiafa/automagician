@@ -54,13 +54,12 @@ class Machine(IntEnum):
 
 @dataclass
 class OptJob:
-    """A class to represent an optimization job
+    """A class to represent an optimization job.
 
-    status
-    home_machine
-      The machine this job is on
-    last_on
-      The machine this job was last ran on
+    Attributes:
+        status: Current convergence/running status of the job.
+        home_machine: The machine where this job was originally registered.
+        last_on: The machine this job was most recently run on.
     """
 
     status: JobStatus
@@ -70,18 +69,14 @@ class OptJob:
 
 @dataclass
 class DosJob:
-    """Density optimization job
+    """A density-of-states job, composed of an SC step followed by a DOS step.
 
-    opt_id
-      The id of the optimization job this is connected to
-    sc_status
-      The status of the optimization job this is connected to
-    dos_status
-        The status of the job
-    sc_last_on
-      The machine the of the optimization job this is connected to
-    dos_last_on
-      The machine that this job was connected to
+    Attributes:
+        opt_id: Row ID of the parent optimisation job in the database.
+        sc_status: Status of the self-consistent (SC) charge-density calculation.
+        dos_status: Status of the density-of-states calculation.
+        sc_last_on: Machine the SC calculation was most recently run on.
+        dos_last_on: Machine the DOS calculation was most recently run on.
     """
 
     opt_dir = None
@@ -94,17 +89,13 @@ class DosJob:
 
 @dataclass
 class WavJob:
-    """A job ran specifically to obtain a WAVECAR
-    opt_id
-      The id of the optimization job this is connected to
-    wav_status
-      The status of the job
-      0 = done
-      1 = nonexistent or unconverged (Unclear) TODO: Get what this means
-      2 = error
-      -1 = running
-    wav_last_on
-      The machine that this job was connected to"""
+    """A job run specifically to obtain a WAVECAR file.
+
+    Attributes:
+        opt_id: Row ID of the parent optimisation job in the database.
+        wav_status: Status of the WAVECAR calculation (see :class:`JobStatus`).
+        wav_last_on: Machine the WAVECAR calculation was most recently run on.
+    """
 
     opt_dir = None
     opt_id: Union[int, Literal[-1]]

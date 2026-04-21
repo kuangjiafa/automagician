@@ -6,3 +6,4 @@ automagician.egg-info
 dist
 .coverage
 .ruff_cache
+docs/_build/
