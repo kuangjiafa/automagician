@@ -26,7 +26,9 @@ try:
             ssh_scp.scp.get(remote + f, local + f)
 
 except ImportError:
-    pass
+
+    def scp_get_dir(remote: str, local: str, ssh_scp: object) -> None:
+        pass
 
 
 IS_DOS_REGEX = re.compile(r".*?(?<!^/home)\/dos$")
