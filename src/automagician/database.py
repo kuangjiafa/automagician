@@ -177,11 +177,11 @@ class Database:
         return wav_jobs
 
     def get_gone_jobs(self) -> Dict[str, GoneJob]:
-        """Returns the wav_jobs in this database.
+        """Returns the gone_jobs in this database.
 
         Returns:
             A dictionary where the keys are the job directories, and the values
-            are the gone jobs associated with said job directory"""
+            are the gone jobs associated with said job directory."""
         gone_jobs: Dict[str, GoneJob] = {}
         for job in self.db.execute("select * from gone_jobs"):
             gone_jobs[job[0]] = GoneJob(

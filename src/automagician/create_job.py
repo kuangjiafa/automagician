@@ -71,9 +71,8 @@ def create_dos_from_sc(
     The INCAR has the fields ICHARGE and LORBIT both set to 11
     Args:
         job_directory: The directory that should be submitted
-        continue_past_limit: Says to raise a JobLimitError when submitting past
-            the limit
-        limit: The ammount of jobs that automagician is allowed to submit
+        continue_past_limit: When ``True``, does not raise on hitting the limit.
+        limit: Maximum number of jobs that automagician is allowed to submit.
         sub_queue: A list showing the jobs that will be submitted
         machine: The machine to submit the jobs on
         hit_limit: If the limit has already been hit
@@ -115,6 +114,17 @@ def create_dos_from_sc(
 
 
 def copy_inputs(subfile: str, job_directory: str, directory: str) -> None:
+    """Creates ``directory`` and copies the standard VASP input files into it.
+
+    Copies the submission script, KPOINTS, POTCAR, INCAR, and CHGCAR (if present)
+    from ``job_directory`` into the newly created ``directory``.  CONTCAR is copied
+    as the starting geometry when it exists, otherwise POSCAR is used.
+
+    Args:
+        subfile: Filename of the scheduler submission script (e.g. ``"fri.sub"``).
+        job_directory: Source directory that holds the VASP input files.
+        directory: Destination directory to create and populate.
+    """
     os.mkdir(directory)
     shutil.copy(os.path.join(job_directory, subfile), directory)
     shutil.copy(os.path.join(job_directory, "KPOINTS"), directory)

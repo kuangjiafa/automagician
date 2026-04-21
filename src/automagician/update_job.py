@@ -121,9 +121,10 @@ def fix_error(
 
 
 def update_job_name(subfile: str) -> None:
-    """Replaces lines that contain -N and -J with new lines
+    """Replaces the ``-J`` / ``--job-name`` line in the submission script.
 
-    -J is repalced with "#SBATCH -J AM_"<current_working_directory with / replaced by _
+    The job name is set to ``AM_<cwd>`` where ``<cwd>`` is the current working
+    directory with ``/`` replaced by ``_``.
     """
     script = open(subfile, "r")
     script_lines = script.readlines()
@@ -145,11 +146,11 @@ def set_incar_tags(path: str, tags_dict: Dict[str, Optional[str]]) -> None:
     If a tag in tags_dict is present in the INCAR, updates the tag to the value present in tags_dict
 
     Args:
-      path (str): the path to the INCAR
-      tags_dict (dict(keys: str vals: str)): A dictionary connecting the diffrent tags of an INCAR to the values,
-        keys = left hand side of the = ex
-          x = y
-          the key is x, while the value is y"""
+        path: Path to the INCAR file to edit.
+        tags_dict: Maps INCAR tag names (left-hand side of ``=``) to their
+            desired values. A ``None`` value means the tag has already been
+            written and should be skipped.
+    """
     with open(path, "r") as read_incar:
         lines = read_incar.readlines()
 
