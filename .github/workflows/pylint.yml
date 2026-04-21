@@ -20,3 +20,6 @@ jobs:
     - name: Analysing the code with pylint
       run: |
         uv run pylint --errors-only src test
+    - name: Run pytest
+      run: |
+        uv run pytest
