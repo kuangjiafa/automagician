@@ -17,7 +17,7 @@ try:
 
     from automagician.classes import SshScp
 except ImportError:
-    print("fabric unavailable")
+    logging.getLogger(__name__).debug("fabric unavailable; SSH/SCP features disabled")
     no_fabric = True
 
 

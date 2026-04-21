@@ -946,7 +946,7 @@ def submit_queue(
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
     database: Database,
-    limit: bool,
+    limit: int,
 ) -> None:
     """Submits the jobs to the queue of the machine
 
@@ -1017,8 +1017,8 @@ def submit_queue(
                 sbatch_process = subprocess.run(
                     ["sbatch", os.path.join(job_dir, subfile)]
                 )
-                print(sbatch_process)
-                print(sbatch_process.returncode)
+                logger.debug(f"sbatch result: {sbatch_process}")
+                logger.debug(f"sbatch returncode: {sbatch_process.returncode}")
                 if sbatch_process.returncode != 0:
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "
