@@ -21,28 +21,13 @@ from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
                                   SSHConfig, WavJob)
 
 if TYPE_CHECKING:
-    from automagician.classes import SshScp
     from automagician.database import Database
 
 try:
-    from automagician.classes import SshScp  # noqa: F811
-
-    def scp_get_dir(remote: str, local: str, ssh_scp: SshScp) -> None:
-        """Puts files inside the remote directory to the local directory
-
-        Args:
-            remote: the directory on the remote machine to transfer files from
-            local: the directory on the local machine to transfer files to
-        """
-        for f in ssh_scp.ssh.run(
-            "cd " + remote + "; find . -type f | cut -c 2-"
-        ).stdout.split("\n"):
-            if len(f) < 1:
-                continue
-            ssh_scp.scp.get(remote + f, local + f)
-
+    from automagician.classes import SshScp
 except ImportError:
-    pass
+    class SshScp:  # type: ignore[no-redef]
+        pass
 
 
 @dataclass
@@ -112,10 +97,7 @@ def process_opt(
             logger.debug("scping from other machine")
             try:
                 shutil.rmtree(job_directory)
-                # mypy thinks config could be "NoSSH" here, but we checked above.
-                # However, scp_get_dir expects SshScp, which is not imported here to avoid cycles.
-                # Casting or ignoring for now as we know it's safe at runtime.
-                machine_file.scp_get_dir(
+                small_functions.scp_get_dir(
                     home_dir + constants.AUTOMAGIC_REMOTE_DIR + job_directory,
                     job_directory,
                     ssh_config.config,
