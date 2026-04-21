@@ -121,10 +121,12 @@ def fix_error(
 
 
 def update_job_name(subfile: str) -> None:
-    """Replaces the ``-J`` / ``--job-name`` line in the submission script.
+    """Replaces the ``-J`` / ``--job-name=`` line in the submission script.
 
     The job name is set to ``AM_<cwd>`` where ``<cwd>`` is the current working
-    directory with ``/`` replaced by ``_``.
+    directory with ``/`` replaced by ``_``. Only the ``-J`` and ``--job-name=``
+    (equals-separated) forms are matched; space-separated ``--job-name <name>``
+    is not handled.
     """
     script = open(subfile, "r")
     script_lines = script.readlines()

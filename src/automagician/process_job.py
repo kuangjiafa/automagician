@@ -235,7 +235,8 @@ def check_error(job_directory: str) -> bool:
 def determine_convergence(job_directory: str) -> bool:
     """Returns if this job has converged, works for all jobs including bulk relaxation.
 
-    Creates a ``fe.dat`` if CONTCAR and ll_out both exist.
+    If no convergence certificate exists and both CONTCAR and ll_out are present,
+    runs ``vef.pl``, which creates or updates ``fe.dat``.
 
     Args:
         job_directory (str): A path to the job directory. NO TRAILING SLASHES
