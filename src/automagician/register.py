@@ -123,9 +123,13 @@ def register(
     )
 
 
+_EXCLUDE_REGEX = re.compile(
+    r".*?(?<!^/home)((/run\d*)|(/dos)|(/sc)|(/[Ii]ni)|(/[Ff]in)|(/wav))"
+)
+
+
 def exclude_regex(job_dir: str) -> bool:
-    regex = r".*?(?<!^/home)((/run\d*)|(/dos)|(/sc)|(/[Ii]ni)|(/[Ff]in)|(/wav))"
-    return bool(re.match(regex, job_dir))
+    return bool(_EXCLUDE_REGEX.match(job_dir))
 
 
 def process_queue(
