@@ -246,7 +246,7 @@ class Database:
             opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in opt_existing:
                 logger.warning(
-                    f"no opt job at directory {opt_dir}. Expected as was adding a dos_job"
+                    f"No opt job found at {opt_dir} while adding dos job {job_dir}."
                 )
                 continue
             opt_id = opt_existing[opt_dir]
@@ -290,7 +290,7 @@ class Database:
             opt_dir = small_functions.get_opt_dir(job_dir)
             if opt_dir not in opt_existing:
                 logger.warning(
-                    f"no opt job at directory {opt_dir}. Expected as was adding a wav_job"
+                    f"No opt job found at {opt_dir} while adding wav job {job_dir}."
                 )
                 continue
             opt_id = opt_existing[opt_dir]
