@@ -233,9 +233,11 @@ def check_error(job_directory: str) -> bool:
 
 # This assumes that all converged calculations do not wrap up its last run
 def determine_convergence(job_directory: str) -> bool:
-    """Returns if this job has converged, Works for all jobs, including bulk relaxition
+    """Returns if this job has converged, works for all jobs including bulk relaxation.
 
-        Creates a fe.dat iff CONTCAR and ll_out exist
+    If no convergence certificate exists and both CONTCAR and ll_out are present,
+    runs ``vef.pl``, which creates or updates ``fe.dat``.
+
     Args:
         job_directory (str): A path to the job directory. NO TRAILING SLASHES
 
@@ -426,28 +428,26 @@ def process_dos(
     machine: Machine,
     hit_limit: bool,
 ) -> None:
-    """Processes a dos job and sets status correctly
+    """Processes a DOS job and updates its status fields.
 
-        This means that if sc or dos is complete then its status is set to
-        JobStatus.Complete, This also means that if there was an eror its status
-        is set to JobStatus.Error.
+    If SC or DOS is complete, the corresponding status is set to
+    ``JobStatus.CONVERGED``. If there is an error, the status is set to
+    ``JobStatus.ERROR``.
 
-        If sc_dir has an error dos_status is set to JobStatus.Incomplete
+    If the SC directory has an error, ``dos_status`` is set to
+    ``JobStatus.INCOMPLETE``. If the DOS directory does not exist yet, it is
+    created and the status is set to ``JobStatus.RUNNING``. If no SC directory
+    exists, one is created and ``sc_status`` is set to ``JobStatus.RUNNING``.
 
-        If dos does not exist in the direcoty creates a dos directory and sets
-        the status to JobStatus.Running
-
-        Additonally if there is no sc creates one and sets its status to
-        JobStatus.Running  while setting the dos status to JobStatus.Incomplete
     Args:
         job_directory: the path to the directory the job is located in
-        opt_jobs: A collection of all optomization jobs known by automagician
-        dos_jobs: A collection of all dos jobs known by automagician
-        continue_past_limit:
-        limit:
-        sub_queue:
-        machine:
-        hit_limit:
+        opt_jobs: A collection of all optimisation jobs known by automagician.
+        dos_jobs: A collection of all DOS jobs known by automagician.
+        continue_past_limit: When ``True``, does not raise on hitting the limit.
+        limit: Maximum number of jobs that may be queued at once.
+        sub_queue: Accumulator list of directories pending submission.
+        machine: The machine the user is currently logged into.
+        hit_limit: Whether the submission limit has already been reached.
     Changes:
     """
     logger = logging.getLogger()
@@ -523,9 +523,26 @@ def process_wav(
     machine: Machine,
     hit_limit: bool,
 ) -> None:
-    """Processes a wav_job and sets its status to 0 if it is complete or if check_error returns true
+    """Processes a wav job, creating the wav directory and submitting if needed.
 
-    Otherwise, sets status to -1"""
+    Waits for the parent optimisation job to converge before acting.
+    If the ``wav/`` subdirectory already exists, checks whether the WAVECAR
+    calculation is complete (``JobStatus.CONVERGED``) or errored
+    (``JobStatus.ERROR``).  If the directory does not exist yet, creates it via
+    :func:`~automagician.create_job.create_wav` and marks the job as
+    ``JobStatus.RUNNING``.
+
+    Args:
+        job_directory: Path to the optimisation job directory.
+        opt_jobs: All known optimisation jobs.
+        wav_jobs: All known wav jobs.
+        continue_past_limit: When ``True``, submission continues even after the
+            job limit is reached instead of raising :class:`~automagician.classes.JobLimitError`.
+        limit: Maximum number of jobs that may be queued at once.
+        sub_queue: Accumulator list of directories pending submission.
+        machine: The machine the user is currently logged into.
+        hit_limit: Whether the submission limit has already been reached.
+    """
     logger = logging.getLogger()
     logger.debug(f"process_wav in {job_directory}")
 
@@ -946,7 +963,7 @@ def submit_queue(
     dos_jobs: Dict[str, DosJob],
     wav_jobs: Dict[str, WavJob],
     database: Database,
-    limit: bool,
+    limit: int,
 ) -> None:
     """Submits the jobs to the queue of the machine
 
@@ -1017,8 +1034,8 @@ def submit_queue(
                 sbatch_process = subprocess.run(
                     ["sbatch", os.path.join(job_dir, subfile)]
                 )
-                print(sbatch_process)
-                print(sbatch_process.returncode)
+                logger.debug(f"sbatch result: {sbatch_process}")
+                logger.debug(f"sbatch returncode: {sbatch_process.returncode}")
                 if sbatch_process.returncode != 0:
                     logger.warning(
                         f"sbatch exited with error code {sbatch_process.returncode} for the job in {job_dir}. "

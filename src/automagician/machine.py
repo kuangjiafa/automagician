@@ -17,7 +17,7 @@ try:
 
     from automagician.classes import SshScp
 except ImportError:
-    print("fabric unavailable")
+    logging.getLogger(__name__).debug("fabric unavailable; SSH/SCP features disabled")
     no_fabric = True
 
 
@@ -199,14 +199,14 @@ def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
 
 
 def get_subfile(machine: Machine) -> str:
-    # for now, we require that the file am.sub exists in the home directory for any user
-    # return "am.sub"
-    # """Gets the name of the correct subfile based on the machine, or none if machine is not valid
-    # Args:
-    #  machine: The machine to get the subfile for,
-    # Returns:
-    #  str: The correct subfile for the machine
-    #  If the machine is not a valid machine returns INVALID"""
+    """Returns the submission script filename for the given machine.
+
+    Args:
+        machine: The machine to get the submission script name for.
+    Returns:
+        The filename of the submission script for the machine.
+        Returns ``"INVALID"`` if the machine is not a recognised value.
+    """
     return {
         Machine.FRI: "fri.sub",
         Machine.HALIFAX: "halifax.sub",

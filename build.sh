@@ -15,7 +15,7 @@ clean(){
 
 create() {
     echo "creating venv"
-    python -m venv .venv
+    uv venv .venv
     echo "leaving create"
 }
 
@@ -29,9 +29,7 @@ lint() {
 
 install_dev() {
     echo "installing dev dependencies"
-    # activate
-    pip install -e ".[dev, remote]"
-    pip install build
+    uv pip install -e ".[dev,remote]"
 }
 
 test(){
@@ -40,7 +38,7 @@ test(){
 }
 
 build(){
-    python -m build
+    uv build
 }
 
 
