@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass
 from enum import IntEnum
 from typing import Literal, Union
@@ -17,7 +18,7 @@ try:
         config: Union[Literal["NoSSH"], SshScp]
 
 except ImportError:
-    print("Fabric was not imported.")
+    warnings.warn("Fabric was not imported; SSH/SCP features disabled", ImportWarning, stacklevel=1)
     Connection = None
     Transfer = None
 

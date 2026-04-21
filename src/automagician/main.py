@@ -289,7 +289,7 @@ def main_wrapper(args: argparse.Namespace) -> None:
                 logger.info("Processing all unconverged optimization jobs")
                 for direc in database.db.execute(
                     "select dir from opt_jobs where status = ?",
-                    str(JobStatus.INCOMPLETE.value),
+                    (JobStatus.INCOMPLETE.value,),
                 ):
                     logger.info(f"inspecting recorded job: {direc[0]}")
                     if args.db_debug_flag:
