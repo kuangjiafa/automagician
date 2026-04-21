@@ -16,7 +16,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        uv sync --system --locked --extra dev --extra remote
+        uv sync --system-certs --locked --extra dev --extra remote
     - name: Analysing the code with pylint
       run: |
-        pylint --errors-only src test
+        uv run pylint --errors-only src test

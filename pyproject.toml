@@ -17,7 +17,7 @@ dependencies = [
 
 [project.optional-dependencies]
     dev = [
-        "ruff", "mypy", "pytest", "isort", "pytest-cov", "pylint"
+        "ruff", "mypy", "pytest>=9.0.3", "isort", "pytest-cov", "pylint"
     ]
     remote = [
         "fabric"
