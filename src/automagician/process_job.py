@@ -21,11 +21,10 @@ from automagician.classes import (DosJob, GoneJob, JobStatus, Machine, OptJob,
                                   SSHConfig, WavJob)
 
 if TYPE_CHECKING:
-    from automagician.classes import SshScp
     from automagician.database import Database
 
 try:
-    from automagician.classes import SshScp  # noqa: F811
+    from automagician.classes import SshScp
 except ImportError:
     class SshScp:  # type: ignore[no-redef]
         pass
