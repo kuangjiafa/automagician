@@ -2,7 +2,7 @@
 
 Automates the submission and lifecycle management of [VASP](https://www.vasp.at/) geometry optimisation (NEB) calculations on HPC clusters (FRI, Halifax, Stampede2, Frontera, LS6). Tracks every job in a local SQLite database, detects convergence, fixes common VASP errors, spawns follow-on DOS/WAV calculations, and optionally balances load across machines via SSH/SCP.
 
-CLI entry point: `automagician` → `automagician:main.main` (see [pyproject.toml](pyproject.toml)).
+CLI entry point: `automagician` → `automagician.main:main` (see [pyproject.toml](pyproject.toml)).
 
 ## Module layout — `src/automagician/`
 

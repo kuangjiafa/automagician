@@ -38,4 +38,4 @@ dev = [
 ]
 
 [project.scripts]
-automagician = "automagician:main.main"
+automagician = "automagician.main:main"
