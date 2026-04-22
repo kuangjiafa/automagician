@@ -112,20 +112,26 @@ def get_machine_name(machine_number: Machine) -> str:
 
 
 def write_lockfile(ssh_config: SSHConfig, machine: Machine) -> None:
-    """Creates a lockfile to stop two automagicians from treading on each other
-    Args:
-      None
-    Returns:
-      Nothing
-    Modifies:
-      machine
-        Creates the lockdir directory if it doesnt exist, and sets permissions to 777.
-        if a lockfile does not exist in the lockdir directory creates a lockfile
+    """Create a lockfile to prevent concurrent automagician instances.
 
-        lockfile
-          Contains USER, machine, process PID, and the time started at
-    Exits:
-      If the lockfile already exists exits the program
+    Creates ``constants.LOCK_DIR`` (mode ``0700``) if it does not exist, or
+    verifies that the existing directory is owned by the current user and
+    corrects its permissions.  When ``--balance`` is active and the machine is
+    FRI or Halifax, the same check is performed on the remote machine via SSH.
+
+    If a lockfile already exists (locally or remotely), logs its contents and
+    calls ``exit()``.  Otherwise, writes a lockfile containing the current user,
+    machine name, PID, and timestamp.
+
+    Args:
+        ssh_config: SSH/SCP connection config; remote lockfile check is skipped
+            when ``config == "NoSSH"``.
+        machine: The machine the process is currently running on; used to decide
+            whether a remote check is needed (``machine < 2`` → FRI/Halifax).
+
+    Raises:
+        PermissionError: If the lock directory exists but is not owned by the
+            current user.
     """
     logger = logging.getLogger()
     if not os.path.isdir(constants.LOCK_DIR):
@@ -217,13 +223,16 @@ def get_subfile(machine: Machine) -> str:
 
 
 def scp_put_dir(local: str, remote: str, ssh_config: SSHConfig) -> None:
-    """Puts files inside the local directory to the remote directory
+    """Copy all files under ``local`` to the corresponding paths under ``remote``.
+
+    Changes into ``local``, then runs ``find . -type f`` to enumerate every
+    file.  For each file it creates the necessary remote parent directories via
+    SSH and uploads the file via SCP.
 
     Args:
-      remote (str): the directory on the remote machine to transfer files to
-      local (str): the directory on the local machine to transfer files from
-    Returns:
-      None
+        local: Absolute path to the source directory on the local machine.
+        remote: Absolute path to the destination directory on the remote machine.
+        ssh_config: Active SSH/SCP connection; must not be ``"NoSSH"``.
     """
     cwd = os.getcwd()
     os.chdir(local)
@@ -246,7 +255,18 @@ from automagician.small_functions import scp_get_dir
 
 
 def automagic_exit(machine: Machine, ssh_config: SSHConfig) -> NoReturn:
-    """Removes the lockfile and closes ssh if connected via SSH"""
+    """Remove the local (and remote) lockfile and close any SSH connection, then exit.
+
+    Deletes ``constants.LOCK_FILE`` locally.  When ``machine < 2`` (FRI/Halifax)
+    and an active SSH connection is present, also deletes the lockfile on the
+    remote machine and closes the connection before calling ``exit()``.
+
+    Args:
+        machine: The machine the process is running on; controls whether a
+            remote cleanup is attempted.
+        ssh_config: SSH/SCP connection config; remote cleanup is skipped when
+            ``config == "NoSSH"``.
+    """
     subprocess.call(["rm", constants.LOCK_FILE])
     if machine < 2 and ssh_config.config != "NoSSH":
         ssh_config.config.ssh.run("rm " + shlex.quote(constants.LOCK_FILE))  # type: ignore

@@ -147,10 +147,26 @@ def create_wav(
     machine: Machine,
     hit_limit: bool,
 ) -> None:
-    """Wakes a WAV directory, and copies INCAR, KPOINTS, POTCAR, and
-    CONTCAR, or POSCAR if CONTCAR does not exist to this new directory
+    """Create a ``wav/`` sibling directory and submit a WAVECAR-only calculation.
 
-    Sets up the INCAR to be that of a WAV calculation. Submits the job"""
+    Copies the standard VASP input files from the converged opt directory into
+    a new ``wav/`` directory (sibling of ``job_directory``), then sets
+    ``IBRION=-1``, ``LWAVE=.TRUE.``, and ``NSW=0`` in the INCAR to request a
+    single-point calculation that writes a WAVECAR.  Finally enqueues the
+    directory for ``sbatch`` submission.
+
+    Args:
+        job_directory: Absolute path to the converged opt job directory.
+        continue_past_limit: When ``True``, does not raise on hitting the limit.
+        limit: Maximum number of jobs that may be queued at once.
+        sub_queue: Accumulator list of directories pending submission.
+        machine: The machine to submit the job on.
+        hit_limit: Whether the submission limit has already been reached.
+
+    Raises:
+        JobLimitError: If submitting this job would breach the limit and
+            ``continue_past_limit`` is ``False``.
+    """
     subfile = machine_file.get_subfile(machine)
     wav_dir = os.path.normpath(os.path.join(job_directory, "../wav"))
     # copy over the inputs
@@ -179,16 +195,26 @@ def create_sc(
     machine: Machine,
     hit_limit: bool,
 ) -> None:
-    """Creates an SC directory and sets INCAR. Submits the job
+    """Create an ``sc/`` sibling directory and submit a self-consistent charge density calculation.
 
-    IBRION = -1
-    LCHARGE  = .TRUE.
-    NSW = 0
+    Copies the standard VASP input files from the converged opt directory into a
+    new ``sc/`` directory (sibling of ``job_directory``), then sets
+    ``IBRION=-1``, ``LCHARGE=.TRUE.``, and ``NSW=0`` in the INCAR so that VASP
+    performs a single-point SCF calculation and writes a CHGCAR.  Finally
+    enqueues the directory for ``sbatch`` submission.
+
     Args:
-      job_directory (str): the path to the directory the job is located in
-    Changes:
-      Submits the job in the job_directory
-      Creates a sc subdirectory inside job directory that is set up for a job"""
+        job_directory: Absolute path to the converged opt job directory.
+        continue_past_limit: When ``True``, does not raise on hitting the limit.
+        limit: Maximum number of jobs that may be queued at once.
+        sub_queue: Accumulator list of directories pending submission.
+        machine: The machine to submit the job on.
+        hit_limit: Whether the submission limit has already been reached.
+
+    Raises:
+        JobLimitError: If submitting this job would breach the limit and
+            ``continue_past_limit`` is ``False``.
+    """
     logger = logging.getLogger()
     subfile = machine_file.get_subfile(machine)
     logger.debug("creating sc directory")
