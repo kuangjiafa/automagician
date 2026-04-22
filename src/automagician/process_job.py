@@ -875,12 +875,22 @@ def gone_job_check(
     database: Database,
     opt_jobs: Dict[str, OptJob],
 ) -> Dict[str, GoneJob]:
-    """Checks optomization jobs and turns them into gone jobs if they do not exist
+    """Move opt jobs whose directories have disappeared to the ``gone_jobs`` table.
 
-    A gone job is a job that's directory is not found
+    Iterates over all ``INCOMPLETE`` opt jobs in the database.  Any whose
+    directory no longer exists on disk is classified as a
+    :class:`~automagician.classes.GoneJob`, removed from ``opt_jobs``, inserted
+    into ``gone_jobs``, and deleted from the ``opt_jobs`` database table.  All
+    database writes are committed atomically at the end.
 
-    Updates the database of gone_jobs with these new jobs
-    Deletes the gone jobs from the opt_jobs table
+    Args:
+        database: Open :class:`~automagician.database.Database` instance used
+            to read the current opt jobs and write the gone jobs.
+        opt_jobs: In-memory map of opt jobs; entries for gone jobs are removed
+            in-place so the rest of the run does not attempt to process them.
+
+    Returns:
+        The updated ``gone_jobs`` mapping from the database after the deletions.
     """
     logger = logging.getLogger()
     my_opt_jobs = database.get_opt_jobs()
@@ -947,11 +957,39 @@ def submit_queue(
     database: Database,
     limit: int,
 ) -> None:
-    """Submits the jobs to the queue of the machine
+    """Submit all jobs in ``sub_queue`` via ``sbatch``, balancing across machines if requested.
 
-    When submitting to fri-halifax attempts to balance files based on how many jobs are in the queue
+    **FRI / Halifax**: counts the number of queued jobs on both machines via
+    ``squeue``.  If ``--balance`` is set and an SSH connection is available,
+    distributes submissions proportionally so that each machine ends up with a
+    similar queue depth; surplus jobs are submitted remotely by copying the
+    directory over SCP and running ``sbatch`` via SSH.  Otherwise all jobs are
+    submitted locally.
 
-    When submitting to tacc  tires to determine if it will hit the limit then submits the jobs
+    **TACC**: computes how many more jobs each TACC cluster can accept
+    (``TACC_QUEUE_MAXES - tacc_queue_sizes``), then allocates jobs
+    proportionally across available capacity.  Jobs destined for a different
+    TACC cluster are written to the ``insta_submit`` table for deferred
+    submission on that machine.
+
+    If ``len(sub_queue) >= limit`` the function logs a warning and returns
+    without submitting anything.
+
+    Args:
+        machine: The machine the user is currently logged into.
+        balance: Whether to attempt cross-machine load balancing.
+        ssh_config: SSH/SCP connection config for FRI ↔ Halifax transfers.
+        sub_queue: Ordered list of job directories to submit.
+        home: User's home directory; used to construct remote paths.
+        tacc_queue_sizes: Three-element list ``[stampede2, frontera, ls6]``
+            tracking how many jobs are already queued on each TACC cluster.
+        opt_jobs: In-memory map of all known optimisation jobs.
+        dos_jobs: In-memory map of all known DOS jobs.
+        wav_jobs: In-memory map of all known WAV jobs.
+        database: Open database instance; used to persist ``insta_submit``
+            entries for cross-TACC submissions.
+        limit: Maximum submission queue size; submission is skipped entirely if
+            the queue is already at or above this size.
     """
     logger = logging.getLogger()
     if len(sub_queue) >= limit:
@@ -1093,8 +1131,16 @@ def submit_queue(
 
 
 def add_to_insta_submit(job_dir: str, machine: str, database: Database) -> None:
-    """Adds the jobs in job_dir into insta_submit
+    """Record a cross-TACC job in the ``insta_submit`` table for deferred submission.
 
-    Does not commit changes to the DB
+    The ``insta_submit`` table is read by the target TACC machine on its next
+    run to detect jobs that should be submitted locally.  Changes are not
+    committed; the caller is responsible for committing when ready.
+
+    Args:
+        job_dir: Absolute path to the job directory that needs submission.
+        machine: Hostname string of the target TACC machine (e.g.
+            ``"stampede2.tacc.utexas.edu"``).
+        database: Open database instance to write into.
     """
     database.db.execute("insert into insta_submit values (?, ?)", (job_dir, machine))

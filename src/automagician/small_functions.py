@@ -38,11 +38,21 @@ GET_OPT_DIR_REGEX = re.compile(r"\/(dos|sc|wav)$")
 
 
 def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
-    """Returns the type of job this is based on the ending directory name.
+    """Classify a job directory as ``"dos"``, ``"sc"``, ``"wav"``, or ``"opt"``.
 
-    Aka if job_dir ends in /dos then this would return "dos" while if it ended in /sc
-    this would return "sc", and if it ended in /wav returns "wav".
-    Finally if it does not match any of the following returns "opt"
+    The path is normalised with ``os.path.normpath`` before matching, so
+    trailing slashes do not affect the result.  Classification is based solely
+    on the final path component: ``/dos`` → ``"dos"``, ``/sc`` → ``"sc"``,
+    ``/wav`` → ``"wav"``, anything else → ``"opt"``.
+
+    The leading ``/home`` segment is exempted so that directories whose root
+    happens to share a name with a reserved component are not misclassified.
+
+    Args:
+        job_dir: Path to the job directory (absolute or relative).
+
+    Returns:
+        One of ``"dos"``, ``"sc"``, ``"wav"``, or ``"opt"``.
     """
     if IS_DOS_REGEX.match(str(os.path.normpath(job_dir))):
         return "dos"
@@ -55,7 +65,18 @@ def classify_job_dir(job_dir: str) -> Literal["dos", "sc", "wav", "opt"]:
 
 
 def get_opt_dir(job_dir: str) -> str:
-    """Replaces the dos sc and wav's that could be in a directory with nothing  to turn them into opt jobs"""
+    """Strip a trailing ``/dos``, ``/sc``, or ``/wav`` segment to recover the opt directory.
+
+    Uses a simple regex substitution and does **not** call ``os.path.normpath``;
+    callers must pass already-normalised paths (no trailing slashes).
+
+    Args:
+        job_dir: Path to a dos, sc, wav, or opt job directory.
+
+    Returns:
+        The path with any trailing ``/dos``, ``/sc``, or ``/wav`` removed.
+        Returns ``job_dir`` unchanged if none of those suffixes are present.
+    """
     return GET_OPT_DIR_REGEX.sub("", str(job_dir))
 
 

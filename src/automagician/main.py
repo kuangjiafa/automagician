@@ -63,7 +63,11 @@ def set_up_logger(is_silent: bool, is_verbose: bool) -> logging.Logger:
 
 
 def set_up_parser() -> argparse.ArgumentParser:
-    """Creates an argparse parser to help parse command line arguments"""
+    """Build and return the CLI argument parser for automagician.
+
+    Returns:
+        Configured :class:`argparse.ArgumentParser` with all supported flags.
+    """
     parser = argparse.ArgumentParser(
         description="helps in making it easier to work with jobs for automagician"
     )
@@ -202,7 +206,7 @@ def set_up_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    """A wrapper around main that sets up the parser and sends in an args array"""
+    """CLI entry point: parse arguments and delegate to :func:`main_wrapper`."""
     parser = set_up_parser()
     args = parser.parse_args()
     main_wrapper(args)

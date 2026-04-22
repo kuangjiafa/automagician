@@ -44,6 +44,17 @@ class JobStatus(IntEnum):
 
 
 class Machine(IntEnum):
+    """Enum identifying the HPC cluster a job is running on.
+
+    Values:
+        FRI (0): fri.cm.utexas.edu
+        HALIFAX (1): halifax.cm.utexas.edu
+        STAMPEDE2_TACC (2): stampede2.tacc.utexas.edu
+        FRONTERA_TACC (3): frontera.tacc.utexas.edu
+        LS6_TACC (4): ls6.tacc.utexas.edu
+        UNKNOWN (-1): hostname did not match any known cluster
+    """
+
     FRI = 0
     HALIFAX = 1
     STAMPEDE2_TACC = 2
@@ -105,7 +116,17 @@ class WavJob:
 
 @dataclass
 class GoneJob:
-    """A record of jobs that can no longer be found"""
+    """A record of an opt job whose directory no longer exists on disk.
+
+    Gone jobs are moved from ``opt_jobs`` into the ``gone_jobs`` database table
+    by :func:`~automagician.process_job.gone_job_check`.
+
+    Attributes:
+        old_dir: The absolute path where the job used to live.
+        status: The last known ``JobStatus`` before the directory disappeared.
+        home_machine: The machine where the job was originally registered.
+        last_on: The machine the job was most recently run on.
+    """
 
     old_dir: str
     status: JobStatus
@@ -114,7 +135,12 @@ class GoneJob:
 
 
 class JobLimitError(Exception):
-    """What happens if you submit too many jobs"""
+    """Raised when the pending submission queue would exceed the configured job limit.
+
+    Caught by :func:`~automagician.main.main_wrapper` to halt further
+    submissions while still allowing the ``finally`` block to flush the current
+    queue and write database state.
+    """
 
     def __init__(self) -> None:
         pass

@@ -24,7 +24,15 @@ def add_preliminary_results(
     energy: float,
     preliminary_results: TextIO,
 ) -> None:
-    """Adds the job directory, step number, force, and energy to the file in preliminary_results"""
+    """Append a job's current step, force, and energy to the preliminary results file.
+
+    Args:
+        job_directory: Absolute path to the job directory.
+        step: Current ionic step number.
+        force: Residual force magnitude at the current step.
+        energy: Total energy at the current step.
+        preliminary_results: Open writable file handle for recording results.
+    """
     preliminary_results.write(str(job_directory) + "\n")
     preliminary_results.write(f"     {step}     {force}     {energy}\n")
 
@@ -72,14 +80,28 @@ def get_error_message(job_directory: str) -> list[str]:
 def fix_error(
     job_directory: str,
 ) -> bool:
-    """Attempts to fix the error in job_direcory. Fixes ZBRENT, and number of potentials incompatable.
+    """Attempt to automatically fix a known VASP error in ``job_directory``.
+
+    Handles two error types found in ``ll_out``:
+
+    - **ZBRENT**: calls :func:`~automagician.finish_job.wrap_up` to archive the
+      current run into ``run<N>/`` and copy CONTCAR over POSCAR, then returns
+      ``True`` so the caller can resubmit.  Returns ``False`` if CONTCAR is
+      missing or empty.
+    - **POTCAR count mismatch**: runs ``sortpos.py`` then ``sogetsoftpbe.py``
+      (paths from :mod:`automagician.constants`) to regenerate a compatible
+      POTCAR.  Returns ``False`` if the scripts are not found.
+
+    If no recognised error is found, logs a message and returns ``False``.
+
     Args:
-      job_directory (str): A path to the directory that contains a job which has an error
-      home_dir (str): A path that contains the files "/kingRaychardsArsenal/sogetsoftpbe.py" and "/kingRaychardsArsenal/sortpos.py"
+        job_directory: Absolute path to the directory containing the failed job.
+
     Returns:
-      True if a fix was attempted,
-    Changes:
-      Resubmits the job iff a fix was attempted"""
+        ``True`` if a fix was attempted (resubmission is expected by the caller);
+        ``False`` if the error was not recognised or the fix prerequisites were
+        missing.
+    """
     logger = logging.getLogger()
     error_messages = get_error_message(job_directory)
 
@@ -181,14 +203,23 @@ def switch_subfile(
     subfile: str,
     machine: Machine,
 ) -> None:
-    """Copies the subfile into new_sub and updates the job_name of new_sub
+    """Copy the machine's default submission script into ``job_dir`` as ``new_sub``.
 
-    if there is not a subfile does nothing
+    If the current subfile (``subfile``) is not present in ``job_dir`` the
+    function is a no-op.  Otherwise it copies ``new_sub`` from the
+    machine-appropriate template archive (FRI/Halifax: ``DEFAULT_SUBFILE_PATH_FRI_HALIFAX``;
+    TACC: ``DEFAULT_SUBFILE_PATH_TACC``) into ``job_dir`` and rewrites the
+    ``#SBATCH -J`` job-name line via :func:`update_job_name`.
+
     Args:
-        job_dir: the job directory
-        new_sub:
-        subfile: The name of the subfile
-        machine:"""
+        job_dir: Absolute path to the job directory.
+        new_sub: Filename of the target submission script to copy in (e.g.
+            ``"halifax.sub"``).
+        subfile: Filename of the current machine's submission script used as a
+            sentinel to confirm an opt job exists here.
+        machine: The machine the user is currently logged into; controls which
+            template archive is used.
+    """
     cwd = os.getcwd()
     try:
         os.chdir(job_dir)
@@ -217,13 +248,22 @@ def set_status_for_newly_submitted_job(
     opt_jobs: Dict[str, OptJob],
     error: bool,
 ) -> None:
-    """Sets the job status to that of special jobs that no longer need to be optoomised
+    """Update the in-memory status for a job that was just submitted via ``sbatch``.
 
+    Classifies ``job_dir`` as ``"opt"``, ``"sc"``, ``"dos"``, or ``"wav"`` and
+    sets the corresponding status field in ``opt_jobs``, ``dos_jobs``, or
+    ``wav_jobs`` to ``JobStatus.RUNNING`` (or ``JobStatus.ERROR`` if ``sbatch``
+    returned a non-zero exit code).  Also records ``job_machine`` as the machine
+    the job was sent to.
 
-    job_dir - the directory that the job is found in
-
-    job_machine - the machine the job is running on
-
+    Args:
+        job_dir: Absolute path to the submitted job directory.
+        job_machine: The machine the job was submitted to.
+        dos_jobs: In-memory map of all known DOS jobs.
+        wav_jobs: In-memory map of all known WAV jobs.
+        opt_jobs: In-memory map of all known optimisation jobs.
+        error: When ``True`` the status is set to ``JobStatus.ERROR`` instead of
+            ``JobStatus.RUNNING`` (indicates ``sbatch`` failed).
     """
     job_type = small_functions.classify_job_dir(job_dir)
     opt_dir = small_functions.get_opt_dir(job_dir)
