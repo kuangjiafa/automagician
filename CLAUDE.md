@@ -38,7 +38,7 @@ Everything goes through [build.sh](build.sh):
 
 - `./build.sh create` — `uv venv .venv`
 - `./build.sh install_dev` — `uv pip install -e ".[dev,remote]"`
-- `./build.sh test` — `pytest --cov=automagician test/`
+- `./build.sh test` — `pytest --cov-report term-missing --cov=automagician test/`
 - `./build.sh lint` — `ruff format`, `isort --profile=black`, `mypy --strict --disallow-untyped-defs`, `ruff check`
 - `./build.sh release` — lint + test + build
 
@@ -55,8 +55,8 @@ See [DEVELOPMENT.md](DEVELOPMENT.md). Tests live in `test/`, fixtures in `test/t
 - `fabric` is an optional dependency; code paths that use SSH/SCP must degrade to no-ops under `ImportError` (see `classes.py`, `small_functions.py`, `machine.py` for the pattern).
 - Database writes: prefer the batching `write_job_statuses` over per-job `add_*_to_db` when updating many rows. When doing many single-row writes in a loop, pass `commit=False` and commit once at the end.
 - Lockfile and DB live in `$HOME` on FRI/Halifax, in `$WORK/..` on TACC — the path logic is in `main.main_wrapper`.
-- Directory paths flowing through the database are absolute; `get_opt_dir` / `classify_job_dir` both use `os.path.normpath` — pass normalized paths in.
+- Directory paths flowing through the database are absolute. `classify_job_dir` normalizes its input via `os.path.normpath`; `get_opt_dir` is a plain regex substitution and does **not** normalize — pass already-normalized paths in.
 
 ## Known issues / backlog
 
-See the project memory file `project_backlog.md` (in the user's auto-memory) for seven ready-to-execute fix plans: `hit_limit` propagation, deprecated-flag cleanup, dead `opt_dir` class attrs, `get_residueSFE` stub, `combine_XDAT_FE` decision, hardcoded user paths in constants.
+Open areas that need attention (not yet tracked in-repo): `hit_limit` propagation is dead-code in `add_to_sub_queue` callers, several CLI flags (`--ac`, `--rsc`, `--rcmb`, `--dbcheck`) reference removed flat-file behavior, `DosJob`/`WavJob` have dead `opt_dir = None` class attrs, `get_residueSFE` is a zero-returning stub, `combine_XDAT_FE` is logged-but-disabled in `wrap_up`, and several paths in `constants.py` are hardcoded to specific users' home dirs.
