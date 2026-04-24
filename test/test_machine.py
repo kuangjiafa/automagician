@@ -1,7 +1,34 @@
 import logging
+from unittest.mock import patch
+
+import pytest
 
 from automagician.classes import Machine, SSHConfig
 from automagician.machine import *
+
+
+@pytest.mark.parametrize(
+    "hostname,expected",
+    [
+        ("fri.cm.utexas.edu", Machine.FRI),
+        ("halifax.cm.utexas.edu", Machine.HALIFAX),
+        ("stampede2.tacc.utexas.edu", Machine.STAMPEDE2_TACC),
+        ("frontera.tacc.utexas.edu", Machine.FRONTERA_TACC),
+        ("ls6.tacc.utexas.edu", Machine.LS6_TACC),
+        ("login1.fri.cm.utexas.edu", Machine.FRI),
+        ("login2.halifax.cm.utexas.edu", Machine.HALIFAX),
+        ("login3.stampede2.tacc.utexas.edu", Machine.STAMPEDE2_TACC),
+        ("login0.frontera.tacc.utexas.edu", Machine.FRONTERA_TACC),
+        ("login1.ls6.tacc.utexas.edu", Machine.LS6_TACC),
+        ("unknown.host", Machine.UNKNOWN),
+        ("login4.fri.cm.utexas.edu", Machine.UNKNOWN),  # Regex only matches 0-3
+        ("login1.unknown.host", Machine.UNKNOWN),
+    ],
+)
+@patch("socket.gethostname")
+def test_get_machine_number(mock_gethostname, hostname, expected):
+    mock_gethostname.return_value = hostname
+    assert get_machine_number() == expected
 
 
 def test_is_oden():
